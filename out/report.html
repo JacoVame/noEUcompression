@@ -1,0 +1,83 @@
+<!doctype html><html><head><meta charset="utf-8"/>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; color: #1f2937; }
+    h1 { font-size: 20px; margin-bottom: 12px; }
+    h2 { font-size: 16px; margin: 22px 0 8px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 13px; }
+    th { background: #f9fafb; text-align: left; }
+    tr:nth-child(even) { background: #fcfcfd; }
+    code { background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+    .bar { font-family: 'Courier New', monospace; white-space: pre; background: #eef2ff; padding: 2px 4px; border-radius: 3px; }
+    .muted { color: #6b7280; }
+    .chart { margin: 8px 0 2px; display: block; width: 100%; height: auto; }
+  </style></head><body>
+    <h1>Hyperbolic Bench Report</h1>
+    <table><thead><tr><th>input</th><th>dimension</th><th>projection</th><th>clusterK</th><th>autoThreshold</th><th>clusterThresholdUsed</th><th>uniqueWords</th><th>clusters</th><th>ratio</th><th>savingsPct</th></tr></thead><tbody><tr><td>demo</td><td>2</td><td>random</td><td>10</td><td>true</td><td>0</td><td>8</td><td>1</td><td>0.625</td><td><div class="bar">████████             %</div></td></tr>
+<tr><td>sample.txt</td><td>2</td><td>random</td><td>0</td><td>true</td><td>0.51</td><td>65</td><td>3</td><td>0.455</td><td><div class="bar">███████████          %</div></td></tr>
+<tr><td>sample.txt</td><td>2</td><td>random</td><td>10</td><td>true</td><td>0.51</td><td>65</td><td>3</td><td>0.455</td><td><div class="bar">███████████          %</div></td></tr>
+<tr><td>sample.txt</td><td>2</td><td>random</td><td>0</td><td>true</td><td>0.51</td><td>65</td><td>3</td><td>0.455</td><td><div class="bar">███████████          %</div></td></tr>
+<tr><td>sample.txt</td><td>2</td><td>random</td><td>10</td><td>true</td><td>0.51</td><td>65</td><td>3</td><td>0.455</td><td><div class="bar">███████████          %</div></td></tr></tbody></table>
+    
+    
+    <h2>Auto-threshold diagnostics</h2>
+    <div class="muted">method=percentile, p=0.35, sampleSize=2080</div>
+    <ul>
+      <li>median=0.6803351656028196, mad=0.26073809859551067, sigma=0.3865703049777041</li>
+      <li>p10=0.27270223545689737, p25=0.40597532895761, p50=0.6803351656028196, p75=0.9260890988130988, p90=1.2537286028109098, p95=1.4909963089948088, p99=1.9256441410511553</li>
+    </ul>
+  
+    <h2>Distance histograms (per run)</h2>
+  <svg width="720" height="180" class="chart">
+    <text x="40" y="20" font-weight="600" fill="#111827">sample.txt — d=2, proj=random, k=0</text>
+    
+    <rect x="40" y="101.19444444444444" width="32.2" height="50.80555555555556" fill="#10b981"/>
+    <rect x="73.2" y="120.56944444444444" width="32.2" height="31.430555555555554" fill="#10b981"/>
+    <rect x="106.4" y="91.29166666666667" width="32.2" height="60.70833333333333" fill="#10b981"/>
+    <rect x="139.60000000000002" y="28" width="32.2" height="124" fill="#10b981"/>
+    <rect x="172.8" y="30.583333333333343" width="32.2" height="121.41666666666666" fill="#10b981"/>
+    <rect x="206" y="51.25" width="32.2" height="100.75" fill="#10b981"/>
+    <rect x="239.20000000000002" y="28" width="32.2" height="124" fill="#10b981"/>
+    <rect x="272.40000000000003" y="74.06944444444444" width="32.2" height="77.93055555555556" fill="#10b981"/>
+    <rect x="305.6" y="111.09722222222223" width="32.2" height="40.90277777777778" fill="#10b981"/>
+    <rect x="338.8" y="96.45833333333333" width="32.2" height="55.54166666666667" fill="#10b981"/>
+    <rect x="372" y="117.125" width="32.2" height="34.875" fill="#10b981"/>
+    <rect x="405.20000000000005" y="135.63888888888889" width="32.2" height="16.36111111111111" fill="#10b981"/>
+    <rect x="438.40000000000003" y="138.22222222222223" width="32.2" height="13.777777777777777" fill="#10b981"/>
+    <rect x="471.6" y="131.76388888888889" width="32.2" height="20.23611111111111" fill="#10b981"/>
+    <rect x="504.80000000000007" y="148.125" width="32.2" height="3.875" fill="#10b981"/>
+    <rect x="538" y="143.38888888888889" width="32.2" height="8.61111111111111" fill="#10b981"/>
+    <rect x="571.2" y="148.55555555555554" width="32.2" height="3.444444444444444" fill="#10b981"/>
+    <rect x="604.4000000000001" y="148.55555555555554" width="32.2" height="3.444444444444444" fill="#10b981"/>
+    <rect x="637.6" y="149.41666666666669" width="32.2" height="2.583333333333333" fill="#10b981"/>
+    <rect x="670.8000000000001" y="151.13888888888889" width="32.2" height="0.861111111111111" fill="#10b981"/>
+    <text x="40" y="172" font-size="12" fill="#6b7280">0</text>
+    <text x="704" y="172" font-size="12" fill="#6b7280" text-anchor="end">2.3978952727983702</text>
+  </svg>
+  <svg width="720" height="180" class="chart">
+    <text x="40" y="20" font-weight="600" fill="#111827">sample.txt — d=2, proj=random, k=10</text>
+    
+    <rect x="40" y="101.19444444444444" width="32.2" height="50.80555555555556" fill="#10b981"/>
+    <rect x="73.2" y="120.56944444444444" width="32.2" height="31.430555555555554" fill="#10b981"/>
+    <rect x="106.4" y="91.29166666666667" width="32.2" height="60.70833333333333" fill="#10b981"/>
+    <rect x="139.60000000000002" y="28" width="32.2" height="124" fill="#10b981"/>
+    <rect x="172.8" y="30.583333333333343" width="32.2" height="121.41666666666666" fill="#10b981"/>
+    <rect x="206" y="51.25" width="32.2" height="100.75" fill="#10b981"/>
+    <rect x="239.20000000000002" y="28" width="32.2" height="124" fill="#10b981"/>
+    <rect x="272.40000000000003" y="74.06944444444444" width="32.2" height="77.93055555555556" fill="#10b981"/>
+    <rect x="305.6" y="111.09722222222223" width="32.2" height="40.90277777777778" fill="#10b981"/>
+    <rect x="338.8" y="96.45833333333333" width="32.2" height="55.54166666666667" fill="#10b981"/>
+    <rect x="372" y="117.125" width="32.2" height="34.875" fill="#10b981"/>
+    <rect x="405.20000000000005" y="135.63888888888889" width="32.2" height="16.36111111111111" fill="#10b981"/>
+    <rect x="438.40000000000003" y="138.22222222222223" width="32.2" height="13.777777777777777" fill="#10b981"/>
+    <rect x="471.6" y="131.76388888888889" width="32.2" height="20.23611111111111" fill="#10b981"/>
+    <rect x="504.80000000000007" y="148.125" width="32.2" height="3.875" fill="#10b981"/>
+    <rect x="538" y="143.38888888888889" width="32.2" height="8.61111111111111" fill="#10b981"/>
+    <rect x="571.2" y="148.55555555555554" width="32.2" height="3.444444444444444" fill="#10b981"/>
+    <rect x="604.4000000000001" y="148.55555555555554" width="32.2" height="3.444444444444444" fill="#10b981"/>
+    <rect x="637.6" y="149.41666666666669" width="32.2" height="2.583333333333333" fill="#10b981"/>
+    <rect x="670.8000000000001" y="151.13888888888889" width="32.2" height="0.861111111111111" fill="#10b981"/>
+    <text x="40" y="172" font-size="12" fill="#6b7280">0</text>
+    <text x="704" y="172" font-size="12" fill="#6b7280" text-anchor="end">2.3978952727983702</text>
+  </svg>
+  </body></html>

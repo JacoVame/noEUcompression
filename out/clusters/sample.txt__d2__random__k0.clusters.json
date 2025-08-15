@@ -1,0 +1,94 @@
+[
+  {
+    "representative": "la",
+    "members": [
+      "la",
+      "il",
+      "al",
+      "della",
+      "nel",
+      "pioggia",
+      "si",
+      "stanza",
+      "suo",
+      "un",
+      "accompagnava",
+      "agitati",
+      "ai",
+      "alle",
+      "battito",
+      "brusio",
+      "calendario",
+      "città",
+      "clienti",
+      "con",
+      "consegne",
+      "da",
+      "dei",
+      "di",
+      "enorme",
+      "era",
+      "erano",
+      "finestra",
+      "fuori",
+      "gregorio",
+      "in",
+      "incerte",
+      "iniziava",
+      "insetto",
+      "lavoro",
+      "le",
+      "leggera",
+      "letto",
+      "loro",
+      "ma",
+      "mattina",
+      "muoversi",
+      "non",
+      "ordinata",
+      "passi",
+      "pensò",
+      "posto",
+      "provò",
+      "samsa",
+      "silenzio",
+      "sogni",
+      "sogno",
+      "solo",
+      "sottili",
+      "suoi",
+      "svegliò",
+      "trasformato",
+      "tremavano",
+      "trovò",
+      "una",
+      "viaggiatori",
+      "voci",
+      "zampette"
+    ],
+    "center": [
+      0.2916666666666667,
+      0.125
+    ]
+  },
+  {
+    "representative": "pensieri",
+    "members": [
+      "pensieri"
+    ],
+    "center": [
+      0.6666666666666666,
+      0.3333333333333333
+    ]
+  },
+  {
+    "representative": "regolare",
+    "members": [
+      "regolare"
+    ],
+    "center": [
+      0.5,
+      0.6666666666666666
+    ]
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "name": "hyperbolic-text-compressor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prototype: hyperbolic embeddings + clustering for semantic compression experiments",
+  "main": "compressionTest.js",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "scripts": {
+    "demo": "node ./compressionTest.js",
+  "test": "cross-env HTC_RUN_TESTS=1 node ./compressionTest.js",
+  "bench": "node ./bench.js",
+  "report": "node ./tools/pretty-report.js --input ./out/bench.jsonl --html ./out/report.html"
+  },
+  "dependencies": {
+    "ml-matrix": "^6.12.1",
+    "svd-js": "^1.1.1"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  }
+}

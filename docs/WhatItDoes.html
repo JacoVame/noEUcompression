@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HyperbolicTextCompressor — Project Infographic</title>
+  <style>
+    :root{
+      --bg:#0b0f14;           /* deep blue-gray */
+      --bg-soft:#111720;
+      --card:#131b26;
+      --ink:#e6f1ff;
+      --muted:#9fb3c8;
+      --primary:#61dafb;      /* light cyan */
+      --accent:#2dd4bf;       /* teal */
+      --warn:#f59e0b;         /* amber */
+      --success:#22c55e;      /* green */
+      --danger:#ef4444;       /* red */
+      --border:#1f2a37;
+      --shadow: 0 6px 30px rgba(0,0,0,0.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 10% -10%, #0d1622, var(--bg)) no-repeat fixed;
+      color:var(--ink);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:28px 20px 64px}
+    .pill{display:inline-flex; gap:.5rem; align-items:center; background:linear-gradient(90deg,#0f1720,#0b1220); border:1px solid var(--border); padding:8px 12px; border-radius:99px; color:var(--muted); font-weight:600; letter-spacing:.2px}
+    header h1{font-size:clamp(1.8rem,3.6vw,2.6rem); margin:.4rem 0 0}
+    header p{color:var(--muted); margin:.3rem 0 1.2rem}
+    .grid{display:grid; gap:16px}
+    .cols-3{grid-template-columns: repeat(1, minmax(0,1fr))}
+    @media (max-width:900px){.cols-3{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,var(--card),#0f1722); border:1px solid var(--border); border-radius:16px; padding:18px; box-shadow:var(--shadow)}
+    h2{font-size:1.2rem; margin:0 0 .6rem}
+    h3{font-size:1.05rem; margin:.2rem 0 .4rem}
+    p{margin:.35rem 0 .6rem}
+    code, pre{background:#0c131c; color:#d7eaff; border:1px solid var(--border)}
+    code{padding:.15rem .35rem; border-radius:8px}
+    pre{padding:12px; border-radius:12px; overflow:auto}
+    .kvs{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+    @media (max-width:700px){.kvs{grid-template-columns:1fr 1fr}}
+    .kv{background:#0e1621; border:1px solid var(--border); border-radius:14px; padding:12px}
+    .kv .k{color:var(--muted); font-size:.8rem}
+    .kv .v{font-weight:700; font-size:1.05rem}
+    .legend{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px}
+    .legend span{display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:.85rem}
+    .dot{width:10px; height:10px; border-radius:50%}
+    .flow{padding:16px; background:linear-gradient(180deg,#0f1926,#0b1220); border:1px dashed #223043; border-radius:16px}
+    .flow svg{width:100%; height:auto}
+    .badge{font-size:.75rem; padding:.15rem .5rem; border:1px solid var(--border); border-radius:999px; color:var(--muted)}
+    .list{margin:.4rem 0 0; padding-left:1rem; color:var(--muted)}
+    .list li{margin:.18rem 0}
+    .ratio-bar{height:12px; width:100%; background:#0a111a; border:1px solid var(--border); border-radius:8px; overflow:hidden}
+    .ratio-inner{height:100%; background:linear-gradient(90deg,var(--accent),#60a5fa); width:40%}
+    .footer{color:#6d7f95; font-size:.85rem; margin-top:28px}
+    .tag{display:inline-block; margin-right:6px; margin-bottom:6px; padding:.25rem .5rem; border-radius:8px; background:#0f1723; border:1px solid var(--border); color:#a9bfd6; font-size:.8rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <span class="pill">HyperbolicTextCompressor • Semantic compression prototype</span>
+    <header>
+      <h1>What this project does</h1>
+      <p>It explores semantic “compression” of text by embedding words in the Poincaré disk (hyperbolic space), measuring hyperbolic distances, and clustering similar words. The size of clusters and their representatives give a toy estimate of compression savings.</p>
+    </header>
+
+    <section class="grid cols-3">
+      <div class="card">
+        <h2>Inputs</h2>
+        <ul class="list">
+          <li>Plain text (UTF‑8)</li>
+          <li>Config: windowSize, projection, weighting, clusterThreshold</li>
+          <li>Dimensions and vocabulary cap (dimension(s), maxVocab)</li>
+          <li>Normalization toggle (normalize)</li>
+          <li>Seed for reproducibility</li>
+        </ul>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--primary)"></span> tokens</span>
+          <span><span class="dot" style="background:var(--accent)"></span> embeddings</span>
+          <span><span class="dot" style="background:var(--warn)"></span> clusters</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Core idea</h2>
+        <p>Use hyperbolic geometry (negative curvature) to represent hierarchical/semantic structure. Cluster by hyperbolic distance to identify groups of near‑synonymous terms, then encode each group via a representative + dictionary.</p>
+        <div class="kvs">
+          <div class="kv"><div class="k">Space</div><div class="v">Poincaré disk</div></div>
+          <div class="kv"><div class="k">Clustering</div><div class="v">Threshold + union‑find</div></div>
+          <div class="kv"><div class="k">Projection</div><div class="v">random | firstD | svd</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Outputs</h2>
+        <ul class="list">
+          <li>Compression ratio and savings estimate</li>
+          <li>Semantic clusters with representatives</li>
+          <li>Processing timings (preprocess, cooc, embed, cluster)</li>
+          <li>Optional HTML report from benchmarks</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>The pipeline</h2>
+      <div class="flow">
+        <!-- Responsive SVG flow diagram -->
+        <svg viewBox="0 0 1200 310" role="img" aria-label="Processing pipeline">
+          <defs>
+            <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#60a5fa"/></linearGradient>
+            <linearGradient id="g2" x1="0" x2="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient>
+            <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.35"/>
+            </filter>
+          </defs>
+          
+          <!-- Step boxes -->
+          <g font-family="inherit" font-size="15" fill="#cfe6ff" text-anchor="middle">
+            <rect x="20" y="20" width="200" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="120" y="46">Preprocess</text>
+            <text x="120" y="66" fill="#9fb3c8">Unicode tokenize</text>
+
+            <rect x="240" y="20" width="230" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="355" y="46">Co‑occurrence matrix</text>
+            <text x="355" y="66" fill="#9fb3c8">window + weighting</text>
+
+            <rect x="500" y="20" width="210" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="605" y="46">Projection</text>
+            <text x="605" y="66" fill="#9fb3c8">random | firstD | svd</text>
+
+            <rect x="740" y="20" width="210" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="845" y="46">Hyperbolic embed</text>
+            <text x="845" y="66" fill="#9fb3c8">Poincaré disk</text>
+
+            <rect x="980" y="20" width="200" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="1080" y="46">Distances</text>
+            <text x="1080" y="66" fill="#9fb3c8">hyperbolic</text>
+
+            <rect x="240" y="130" width="230" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="355" y="156">Clustering</text>
+            <text x="355" y="176" fill="#9fb3c8">union‑find; k‑NN optional</text>
+
+            <rect x="500" y="130" width="210" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="605" y="156">Auto‑threshold</text>
+            <text x="605" y="176" fill="#9fb3c8">percentile | MAD | hybrid</text>
+
+            <rect x="740" y="130" width="210" height="64" rx="12" fill="#0f1a27" stroke="#223043" filter="url(#soft)"/>
+            <text x="845" y="156">Compression estimate</text>
+            <text x="845" y="176" fill="#9fb3c8">representatives + dict</text>
+          </g>
+
+          <!-- Arrows -->
+          <g stroke="url(#g1)" stroke-width="3" fill="none" stroke-linecap="round">
+            <path d="M 220 52 L 240 52"/>
+            <path d="M 470 52 L 500 52"/>
+            <path d="M 710 52 L 740 52"/>
+            <path d="M 950 52 L 980 52"/>
+          </g>
+          <g fill="url(#g1)">
+            <polygon points="238,52 232,48 232,56"/>
+            <polygon points="498,52 492,48 492,56"/>
+            <polygon points="738,52 732,48 732,56"/>
+            <polygon points="978,52 972,48 972,56"/>
+          </g>
+
+          <!-- Down arrow to clustering branch -->
+          <g stroke="url(#g2)" stroke-width="3" fill="none" stroke-linecap="round">
+            <path d="M 1080 84 C 1080 110, 355 100, 355 130"/>
+          </g>
+          <g fill="url(#g2)"><polygon points="355,130 351,124 359,124"/></g>
+
+          <!-- Horizontal arrows in second row -->
+          <g stroke="url(#g1)" stroke-width="3" fill="none" stroke-linecap="round">
+            <path d="M 470 162 L 500 162"/>
+            <path d="M 710 162 L 740 162"/>
+          </g>
+          <g fill="url(#g1)">
+            <polygon points="498,162 492,158 492,166"/>
+            <polygon points="738,162 732,158 732,166"/>
+          </g>
+
+          <!-- Output badge -->
+          <g>
+            <rect x="980" y="130" width="200" height="64" rx="12" fill="#0e1a29" stroke="#2a3a52"/>
+            <text x="1080" y="156" font-family="inherit" font-size="15" fill="#cfe6ff" text-anchor="middle">Outputs</text>
+            <text x="1080" y="176" font-family="inherit" font-size="14" fill="#9fb3c8" text-anchor="middle">ratio • clusters • report</text>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--primary)"></span> Processing flow</span>
+        <span><span class="dot" style="background:var(--warn)"></span> Branch to clustering/threshold</span>
+      </div>
+    </section>
+
+    <section class="grid cols-3" style="margin-top:16px">
+      <div class="card">
+        <h2>Key options</h2>
+        <span class="tag">dimension(s)</span>
+        <span class="tag">windowSize</span>
+        <span class="tag">weighting: uniform | distance</span>
+        <span class="tag">projection: random | firstD | svd</span>
+        <span class="tag">randomFeaturesPerDim</span>
+        <span class="tag">maxVocab</span>
+        <span class="tag">normalize</span>
+        <span class="tag">svdMaxN</span>
+        <span class="tag">clusterThreshold</span>
+        <span class="tag">clusterK (k‑NN prefilter)</span>
+        <span class="tag">approxKNN / approxKCandidates</span>
+        <span class="tag">autoThreshold + method</span>
+        <span class="tag">autoThresholdPercentile</span>
+        <span class="tag">autoThresholdSample</span>
+        <span class="tag">autoThresholdMADK</span>
+        <span class="tag">autoThresholdHistogramBins</span>
+        <span class="tag">autoStats / diagOnly</span>
+        <span class="tag">seed</span>
+      </div>
+      <div class="card">
+        <h2>Quick start</h2>
+        <pre><code># Run demo
+node .\compressionTest.js
+
+# Benchmark & report (PowerShell)
+# Single-line:
+npm run bench -- --file .\samples\sample.txt --auto --autoMethod hybrid --k 0,10 --approxKNN 1 --approxKCandidates 100 --emitClusters .\out\clusters --outJson .\out\bench.jsonl
+
+# Multi-line with PowerShell line continuation (`):
+npm run bench -- --file .\samples\sample.txt --auto --autoMethod hybrid `
+  --k 0,10 --approxKNN 1 --approxKCandidates 100 `
+  --emitClusters .\out\clusters --outJson .\out\bench.jsonl
+
+# Generate HTML report
+npm run report  # writes .\out\report.html</code></pre>
+      </div>
+      <div class="card">
+        <h2>Interpreting results</h2>
+        <ul class="list">
+          <li><strong>Compression ratio</strong>: estimated size after clustering vs. original</li>
+          <li><strong>Savings</strong>: percentage reduction suggested by cluster mapping</li>
+          <li><strong>Clusters</strong>: representative term + members</li>
+        </ul>
+        <p class="badge">Note: this is a research prototype, not a general‑purpose compressor.</p>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Minimal usage (API)</h2>
+      <pre><code>const HyperbolicTextCompressor = require('./compressionTest');
+const c = new HyperbolicTextCompressor(2, {
+  maxVocab: 3000,
+  seed: 42,
+  windowSize: 3,
+  clusterThreshold: 0.4,
+  projection: 'random',           // 'random' | 'firstD' | 'svd'
+  weighting: 'distance',          // 'uniform' | 'distance'
+  autoThreshold: true,            // optional auto tuning
+  autoThresholdMethod: 'hybrid'   // 'percentile' | 'mad' | 'hybrid'
+});
+const res = c.analyzeAndCompress('your text here');
+console.log(res.compressionRatio, res.semanticClusters.slice(0,3));</code></pre>
+    </section>
+
+    <p class="footer">See README.md and hyperbolic_compression_analysis.md for details. For broader context and visuals, check ReportNonEUCompression.html.</p>
+  </div>
+</body>
+</html>
+
