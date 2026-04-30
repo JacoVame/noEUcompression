@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"/>
+<title>HyperbolicTextCompressor — Pipeline animata · Animated pipeline</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  :root {
+    --bg: #0b1020;
+    --ink: #e6ecff;
+    --muted: #9fb0e2;
+    --accent: #ffd166;
+    --line: #2c3e7a;
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 28px 8px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .toolbar { display: flex; gap: 8px; padding: 10px 28px; align-items: center; flex-wrap: wrap; }
+  button { background: #182245; color: var(--ink); border: 1px solid var(--line);
+    padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.active { background: var(--accent); color: #1a1300; border-color: var(--accent); }
+  .stage-name { color: var(--accent); font-weight: 700; margin-left: 8px; }
+  .frame { display: block; margin: 0 auto; max-width: 1240px; padding: 0 14px 24px; }
+  object, embed, iframe { display: block; width: 100%; height: auto; aspect-ratio: 1200/620; }
+  .captions { padding: 18px 28px 36px; max-width: 1100px; }
+  .cap { display: none; }
+  .cap.active { display: block; animation: fade .35s ease-in; }
+  .cap h2 { color: var(--accent); margin: 8px 0 4px; font-size: 18px; }
+  .cap p { color: var(--ink); line-height: 1.55; margin: 4px 0; }
+  .cap p.en { color: var(--muted); font-style: italic; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+  .lang-en .it { display: none; }
+  .lang-en .en-only { display: block; }
+  .en-only { display: none; }
+  footer { color: var(--muted); font-size: 12px; padding: 0 28px 24px; }
+  a { color: #7aa2ff; }
+</style>
+</head>
+<body class="lang-it">
+<header>
+  <h1 class="it">Pipeline animata · come funziona, passo per passo</h1>
+  <h1 class="en-only">Animated pipeline · how it works, step by step</h1>
+  <div class="sub it">Otto stadi, dal testo grezzo alla stima di compressione, con il disco di Poincaré al centro.</div>
+  <div class="sub en-only">Eight stages from raw text to a compression estimate, with the Poincaré disk at the heart of it.</div>
+</header>
+
+<div class="toolbar">
+  <button id="btnPlay">▶ Play</button>
+  <button id="btnPause">❚❚ Pause</button>
+  <button id="btnStep">⇥ Step</button>
+  <button id="btnReset">↺ Reset</button>
+  <button id="btnLang">EN ⇄ IT</button>
+  <span class="stage-name" id="stageLabel">Stage 1 / 8 — Preprocess</span>
+</div>
+
+<div class="frame">
+  <object id="svgFrame" type="image/svg+xml" data="pipeline.svg" aria-label="Animated pipeline SVG">
+    <img src="pipeline.svg" alt="Animated pipeline"/>
+  </object>
+</div>
+
+<section class="captions">
+  <div class="cap active" data-stage="1">
+    <h2>1 · Preprocess — pulizia e tokenizzazione</h2>
+    <p class="it">Il testo viene normalizzato in NFKC (per uniformare accenti e varianti Unicode) e spezzato in parole di almeno due lettere. Niente punteggiatura, niente cifre, niente sillabe singole: è la fase in cui «il testo diventa una collana di parole».</p>
+    <p class="en">The text is NFKC-normalized to align accents and Unicode variants, then split into letter sequences of length two or more. Punctuation, digits and single letters are dropped; the text becomes a string of beads.</p>
+  </div>
+  <div class="cap" data-stage="2">
+    <h2>2 · Co-occurrence — chi compare vicino a chi</h2>
+    <p class="it">Una finestra scorrevole misura quante volte ogni coppia di parole appare a poca distanza nel testo. Il risultato è una matrice sparsa: se due parole non si sono mai sfiorate, la cella resta vuota.</p>
+    <p class="en">A sliding window counts how often each pair of words appears within a short reach of one another. The result is a sparse matrix: pairs that never met stay empty cells.</p>
+  </div>
+  <div class="cap" data-stage="3">
+    <h2>3 · Embedding — comprimere il vocabolario in poche dimensioni</h2>
+    <p class="it">Ogni riga della matrice viene proiettata in un vettore con poche dimensioni (in genere 2 o 3). Tre strategie disponibili: <code>random</code> (robusta, default), <code>firstD</code> (storica) e <code>svd</code> (per vocabolari piccoli).</p>
+    <p class="en">Each matrix row is projected into a small-dimensional vector (typically 2 or 3). Three strategies: <code>random</code> (robust default), <code>firstD</code> (legacy) and <code>svd</code> (for small vocabularies).</p>
+  </div>
+  <div class="cap" data-stage="4">
+    <h2>4 · Disco di Poincaré — entriamo nello spazio curvo</h2>
+    <p class="it">I vettori vengono ridimensionati radialmente per cadere dentro il disco unitario, dove la geometria è iperbolica. Vicino al centro c’è poco «spazio»; verso il bordo lo spazio si espande all’infinito, perfetto per gerarchie ad albero.</p>
+    <p class="en">Vectors are radially scaled to fit inside the unit disk, where geometry is hyperbolic. Near the centre there is little room; near the boundary space expands without bound, which suits tree-shaped hierarchies.</p>
+  </div>
+  <div class="cap" data-stage="5">
+    <h2>5 · Distanza iperbolica — quanto sono lontane due parole?</h2>
+    <p class="it">La distanza usa la formula di Möbius con <code>acosh</code>. Due parole vicine al centro restano vicine; se una scivola verso il bordo, la distanza esplode. È il modo in cui la geometria amplifica le differenze fra famiglie semantiche.</p>
+    <p class="en">Distance uses the Möbius formula with <code>acosh</code>. Two words near the centre stay close; if one drifts toward the boundary, distance explodes. The geometry amplifies differences between semantic families.</p>
+  </div>
+  <div class="cap" data-stage="6">
+    <h2>6 · Auto-soglia — un metro che si calibra da solo</h2>
+    <p class="it">Anziché scegliere la soglia di clustering a mano, il sistema la stima da un campione di distanze: percentile, MAD, oppure ibrida (decide in base alla forma della distribuzione). Insieme ai dati esce un piccolo cruscotto: mediana, MAD, p95, istogramma.</p>
+    <p class="en">Instead of picking the clustering threshold by hand, the system estimates it from a sample of distances: percentile, MAD, or hybrid (which switches based on the distribution’s shape). Diagnostics come along: median, MAD, p95, histogram.</p>
+  </div>
+  <div class="cap" data-stage="7">
+    <h2>7 · Clustering — union-find sul grafo delle vicinanze</h2>
+    <p class="it">Si collegano due parole se la loro distanza iperbolica è sotto soglia. Il grafo viene attraversato con union-find: il risultato è deterministico e non dipende dall’ordine dei dati. Un eventuale prefiltro k-NN abbassa il costo da O(V²) a O(V·K).</p>
+    <p class="en">Two words are linked when their hyperbolic distance is below the threshold. Union-find traverses the graph; the result is deterministic and order-invariant. An optional k-NN prefilter brings cost from O(V²) down to O(V·K).</p>
+  </div>
+  <div class="cap" data-stage="8">
+    <h2>8 · Stima di compressione — un modello giocattolo, ma onesto</h2>
+    <p class="it">Si stima la dimensione «compressa» come numero di cluster + 50% della popolazione totale (overhead della tabella di mapping). Non è un codec a livello byte: è un termometro che misura quanto i cluster catturano della ridondanza.</p>
+    <p class="en">Compressed size is estimated as number of clusters + 50% of total membership (mapping-table overhead). This is not a byte-level codec: it is a thermometer that gauges how much redundancy the clusters absorb.</p>
+  </div>
+</section>
+
+<footer>
+  <p class="it">Sorgente del codice di riferimento: <a href="../../compressionTest.js"><code>compressionTest.js</code></a> · esempi nel JSONL di benchmark <a href="../../out/bench.jsonl"><code>out/bench.jsonl</code></a>.</p>
+  <p class="en-only">Source of truth: <a href="../../compressionTest.js"><code>compressionTest.js</code></a> · benchmark examples <a href="../../out/bench.jsonl"><code>out/bench.jsonl</code></a>.</p>
+</footer>
+
+<script>
+  const labels = [
+    "Stage 1 / 8 — Preprocess",
+    "Stage 2 / 8 — Co-occurrence",
+    "Stage 3 / 8 — Embedding",
+    "Stage 4 / 8 — Poincaré disk",
+    "Stage 5 / 8 — Hyperbolic distance",
+    "Stage 6 / 8 — Auto-threshold",
+    "Stage 7 / 8 — Clustering",
+    "Stage 8 / 8 — Estimate"
+  ];
+  const stageLabel = document.getElementById("stageLabel");
+  const caps = [...document.querySelectorAll(".cap")];
+  let idx = 0, timer = null;
+
+  function setStage(i) {
+    idx = ((i % 8) + 8) % 8;
+    stageLabel.textContent = labels[idx];
+    caps.forEach(c => c.classList.toggle("active", Number(c.dataset.stage) === idx + 1));
+  }
+  function play() {
+    pause();
+    timer = setInterval(() => setStage(idx + 1), 2000);
+    document.getElementById("btnPlay").classList.add("active");
+  }
+  function pause() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    document.getElementById("btnPlay").classList.remove("active");
+  }
+  function reset() {
+    pause();
+    setStage(0);
+    // Reload SVG to re-run its <set> animations from t=0
+    const obj = document.getElementById("svgFrame");
+    const data = obj.getAttribute("data");
+    obj.setAttribute("data", data + "?t=" + Date.now());
+  }
+  document.getElementById("btnPlay").addEventListener("click", play);
+  document.getElementById("btnPause").addEventListener("click", pause);
+  document.getElementById("btnStep").addEventListener("click", () => { pause(); setStage(idx + 1); });
+  document.getElementById("btnReset").addEventListener("click", reset);
+  document.getElementById("btnLang").addEventListener("click", () => {
+    document.body.classList.toggle("lang-it");
+    document.body.classList.toggle("lang-en");
+  });
+  setStage(0);
+  play();
+</script>
+</body>
+</html>

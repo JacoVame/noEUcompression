@@ -1,8 +1,42 @@
 # HyperbolicTextCompressor
 
-A small, self-contained prototype that explores semantic "compression" of text by mapping words into the Poincaré disk (hyperbolic space), clustering them by hyperbolic distance, and estimating a toy compression ratio.
+> **Comprime il senso, non i byte · Compresses meaning, not bytes.**
+>
+> A research prototype that maps words into the Poincaré disk (a *non-Euclidean* curved space — hence the playful "non-EU" nickname), groups them into semantic families and estimates how much redundancy was absorbed. It is not a `gzip` replacement: it is a small laboratory of hyperbolic geometry for text.
 
-This is research/prototyping code: it’s not a general-purpose compressor. It’s meant to help you experiment with non‑Euclidean geometries for text representation and get intuition about cluster-based compression ideas.
+## 🌍 Read this in your language · Leggilo nella tua lingua
+
+| | |
+|---|---|
+| 🇮🇹 **Italiano** *(lingua principale)* | [`docs/it/`](./docs/it/README.md) — panoramica, pipeline, glossario, FAQ, racconto |
+| 🇬🇧 **English** | [`docs/en/`](./docs/en/README.md) — overview, pipeline, glossary, FAQ, story |
+
+## 🎬 Just want to see it work?
+
+- 🔄 [Animated pipeline (browser)](./docs/diagram/pipeline.html) — eight stages in motion, IT/EN captions
+- 🧠 [Diagrams: limits, use cases, roadmap (Mermaid)](./docs/diagram/diagrams.md)
+- 🎤 [Slides — Italian (~30 min)](./presentation/it/index.html) · [English](./presentation/en/index.html) · see [`presentation/README.md`](./presentation/README.md) for PDF export
+- 📖 [Il racconto (IT)](./docs/it/racconto.md) · [The story (EN)](./docs/en/story.md) — a novel-style read for the curious
+
+## 📚 What's in this repository
+
+```
+compressionTest.js        ← engine (8 stages: preprocess → estimate)
+bench.js                  ← benchmark CLI, emits one JSON line per run
+tools/pretty-report.js    ← bench JSONL → HTML report
+samples/sample.txt        ← Italian demo text
+out/{bench.jsonl,         ← reproducible benchmark outputs
+     clusters/,
+     report.html}
+docs/{it,en,diagram}/     ← bilingual documentation + diagrams
+presentation/{it,en}/     ← reveal.js decks + speaker notes
+```
+
+---
+
+## Original technical README
+
+What follows is the original developer-oriented documentation, kept intact for reference.
 
 ## Highlights
 
@@ -356,7 +390,7 @@ npm test
 
 ## Research notes and next steps
 
-See `hyperbolic_compression_analysis.md` and `ReportNonEUCompression.html` for broader context and visuals. Potential future improvements:
+See [`docs/en/hyperbolic_compression_analysis.md`](./docs/en/hyperbolic_compression_analysis.md) and [`docs/en/ReportNonEUCompression.html`](./docs/en/ReportNonEUCompression.html) for broader context and visuals. Potential future improvements:
 
 - Replace heuristic projection with Truncated SVD or randomized PCA before Poincaré projection
 - Refine the existing k‑NN prefilter (already implemented) with approximate KNN for scalability
@@ -364,6 +398,19 @@ See `hyperbolic_compression_analysis.md` and `ReportNonEUCompression.html` for b
 - Streaming co‑occurrence builder for very large corpora
 - Optional TF‑IDF reweighting of co‑occurrence counts
 
+## Community-friendly documentation
+
+For a slower-paced introduction (no PowerShell-only examples, plain explanations, FAQ, glossary, novel-style story) head to:
+
+- 🇮🇹 [`docs/it/`](./docs/it/README.md) — Italian, the project's primary outreach language
+- 🇬🇧 [`docs/en/`](./docs/en/README.md) — English mirror
+
+Plus the [animated pipeline](./docs/diagram/pipeline.html), the supporting [diagrams](./docs/diagram/diagrams.md), and the [reveal.js decks](./presentation/README.md) for talks.
+
 ## License
 
-This prototype intentionally avoids external dependencies and is provided as‑is for research and discussion.
+MIT — see [`LICENSE`](./LICENSE).
+
+## Credits
+
+Author: **Gianluca Gagliano**. Acknowledgments to **Prof. Vito Di Gesù** and **Prof. Domenico Tegolo**, whose work seeded the ideas behind this prototype.

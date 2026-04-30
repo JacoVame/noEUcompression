@@ -1,0 +1,256 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-label="HyperbolicTextCompressor animated pipeline" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#101935"/>
+    </linearGradient>
+    <radialGradient id="disk" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1c2a55"/>
+      <stop offset="80%" stop-color="#0f1735"/>
+      <stop offset="100%" stop-color="#070b1c"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7aa2ff"/>
+    </marker>
+    <style><![CDATA[
+      .stage rect { fill: #182245; stroke: #2c3e7a; stroke-width: 1.2; rx: 10; }
+      .stage text.title { fill: #e6ecff; font-size: 14px; font-weight: 700; }
+      .stage text.sub  { fill: #9fb0e2; font-size: 11px; }
+      .stage.active rect { stroke: #ffd166; stroke-width: 2.2; filter: url(#glow); }
+      .stage.active text.title { fill: #ffd166; }
+      .axis  { stroke: #3b4a83; stroke-width: 1; }
+      .word  { fill: #e6ecff; font-size: 12px; }
+      .legend{ fill: #9fb0e2; font-size: 11px; }
+      .step  { fill: #7aa2ff; font-size: 11px; font-weight: 600; }
+      .conn  { stroke: #7aa2ff; stroke-width: 1.6; fill: none; marker-end: url(#arrow); opacity: .55; }
+      .ring  { fill: none; stroke: #2c3e7a; stroke-width: 1; opacity: .55; }
+      .cluster-a { fill: #ff8fa3; }
+      .cluster-b { fill: #8be9fd; }
+      .cluster-c { fill: #f1fa8c; }
+      .pulse { animation: pulse 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+      @keyframes pulse { 0%,100% { transform: scale(1); opacity: .9 } 50% { transform: scale(1.08); opacity: 1 } }
+      @keyframes float-token {
+        0%   { transform: translate(60px, 80px); }
+        12%  { transform: translate(220px, 80px); }
+        25%  { transform: translate(380px, 80px); }
+        38%  { transform: translate(540px, 80px); }
+        51%  { transform: translate(700px, 80px); }
+        64%  { transform: translate(860px, 80px); }
+        77%  { transform: translate(1020px, 80px); }
+        90%  { transform: translate(1100px, 80px); }
+        100% { transform: translate(60px, 80px); }
+      }
+      .token { animation: float-token 16s linear infinite; }
+      @keyframes drift1 { 0%{transform:translate(0,0)} 50%{transform:translate(38px,-22px)} 100%{transform:translate(0,0)} }
+      @keyframes drift2 { 0%{transform:translate(0,0)} 50%{transform:translate(-30px,30px)} 100%{transform:translate(0,0)} }
+      @keyframes drift3 { 0%{transform:translate(0,0)} 50%{transform:translate(22px,40px)} 100%{transform:translate(0,0)} }
+      .pt1 { animation: drift1 7s ease-in-out infinite; }
+      .pt2 { animation: drift2 9s ease-in-out infinite; }
+      .pt3 { animation: drift3 6s ease-in-out infinite; }
+    ]]></style>
+  </defs>
+
+  <rect width="1200" height="620" fill="url(#bg)"/>
+
+  <text x="600" y="34" text-anchor="middle" fill="#e6ecff" font-size="18" font-weight="700">
+    HyperbolicTextCompressor — Pipeline a otto stadi · Eight-stage pipeline
+  </text>
+
+  <!-- 8 stage cards: 8 columns of width 140, gap 10 -->
+  <g class="stage" id="s1" transform="translate(40,70)">
+    <rect width="135" height="90"/>
+    <text class="title" x="10" y="22">1 · Preprocess</text>
+    <text class="sub"   x="10" y="42">NFKC + tokenize</text>
+    <text class="sub"   x="10" y="58">parole ≥ 2 lettere</text>
+    <text class="sub"   x="10" y="74">letters only</text>
+  </g>
+  <g class="stage" id="s2" transform="translate(185,70)">
+    <rect width="135" height="90"/>
+    <text class="title" x="10" y="22">2 · Co-occurrence</text>
+    <text class="sub"   x="10" y="42">finestra scorrevole</text>
+    <text class="sub"   x="10" y="58">sliding window</text>
+    <text class="sub"   x="10" y="74">matrice sparsa</text>
+  </g>
+  <g class="stage" id="s3" transform="translate(330,70)">
+    <rect width="135" height="90"/>
+    <text class="title" x="10" y="22">3 · Embedding</text>
+    <text class="sub"   x="10" y="42">random / firstD / svd</text>
+    <text class="sub"   x="10" y="58">vettori in R^d</text>
+    <text class="sub"   x="10" y="74">d-dim vectors</text>
+  </g>
+  <g class="stage" id="s4" transform="translate(475,70)">
+    <rect width="135" height="90"/>
+    <text class="title" x="10" y="22">4 · Poincaré disk</text>
+    <text class="sub"   x="10" y="42">scaling radiale</text>
+    <text class="sub"   x="10" y="58">‖x‖ &lt; 1</text>
+    <text class="sub"   x="10" y="74">curved space</text>
+  </g>
+  <g class="stage" id="s5" transform="translate(620,70)">
+    <rect width="135" height="90"/>
+    <text class="title" x="10" y="22">5 · Hyperbolic dist.</text>
+    <text class="sub"   x="10" y="42">metrica di Möbius</text>
+    <text class="sub"   x="10" y="58">acosh(1 + 2·…)</text>
+    <text class="sub"   x="10" y="74">curved distance</text>
+  </g>
+  <g class="stage" id="s6" transform="translate(765,70)">
+    <rect width="135" height="90"/>
+    <text class="title" x="10" y="22">6 · Auto-threshold</text>
+    <text class="sub"   x="10" y="42">percentile / MAD</text>
+    <text class="sub"   x="10" y="58">hybrid · diagnostics</text>
+    <text class="sub"   x="10" y="74">soglia adattiva</text>
+  </g>
+  <g class="stage" id="s7" transform="translate(910,70)">
+    <rect width="135" height="90"/>
+    <text class="title" x="10" y="22">7 · Clustering</text>
+    <text class="sub"   x="10" y="42">union-find</text>
+    <text class="sub"   x="10" y="58">opt. k-NN prefilter</text>
+    <text class="sub"   x="10" y="74">deterministic</text>
+  </g>
+  <g class="stage" id="s8" transform="translate(1055,70)">
+    <rect width="100" height="90"/>
+    <text class="title" x="10" y="22">8 · Estimate</text>
+    <text class="sub"   x="10" y="42">cluster + map</text>
+    <text class="sub"   x="10" y="58">ratio · savings</text>
+    <text class="sub"   x="10" y="74">toy model</text>
+  </g>
+
+  <!-- Connecting arrows between stages -->
+  <g>
+    <path class="conn" d="M175,115 L185,115"/>
+    <path class="conn" d="M320,115 L330,115"/>
+    <path class="conn" d="M465,115 L475,115"/>
+    <path class="conn" d="M610,115 L620,115"/>
+    <path class="conn" d="M755,115 L765,115"/>
+    <path class="conn" d="M900,115 L910,115"/>
+    <path class="conn" d="M1045,115 L1055,115"/>
+  </g>
+
+  <!-- Animated token: a small word that flows along stages -->
+  <g class="token" filter="url(#glow)">
+    <circle r="9" fill="#ffd166"/>
+    <text y="4" text-anchor="middle" font-size="10" font-weight="700" fill="#1a1300">w</text>
+  </g>
+
+  <!-- Lower panel: Poincaré disk visualization with three drifting clusters -->
+  <g transform="translate(80,200)">
+    <text class="legend" x="0" y="0">Disco di Poincaré · Poincaré disk (curvatura negativa · negative curvature)</text>
+    <circle cx="200" cy="180" r="170" fill="url(#disk)" stroke="#3b4a83" stroke-width="1.5"/>
+    <circle cx="200" cy="180" r="120" class="ring"/>
+    <circle cx="200" cy="180" r="70"  class="ring"/>
+    <line class="axis" x1="30" y1="180" x2="370" y2="180"/>
+    <line class="axis" x1="200" y1="10" x2="200" y2="350"/>
+
+    <!-- Cluster A: articles & prepositions, near center -->
+    <g class="pulse pt1">
+      <circle class="cluster-a" cx="190" cy="186" r="6"/>
+      <text class="word" x="200" y="190">la</text>
+      <circle class="cluster-a" cx="170" cy="170" r="5"/>
+      <text class="word" x="138" y="170">il</text>
+      <circle class="cluster-a" cx="218" cy="166" r="5"/>
+      <text class="word" x="226" y="170">della</text>
+      <circle class="cluster-a" cx="180" cy="210" r="4"/>
+      <text class="word" x="120" y="216">nel</text>
+    </g>
+
+    <!-- Cluster B: rare evocative words, mid-far -->
+    <g class="pulse pt2">
+      <circle class="cluster-b" cx="285" cy="220" r="6"/>
+      <text class="word" x="295" y="225">pensieri</text>
+      <circle class="cluster-b" cx="305" cy="240" r="4"/>
+      <text class="word" x="312" y="252">silenzio</text>
+    </g>
+
+    <!-- Cluster C: outlier near boundary -->
+    <g class="pulse pt3">
+      <circle class="cluster-c" cx="120" cy="100" r="6"/>
+      <text class="word" x="58" y="98">regolare</text>
+    </g>
+
+    <text class="legend" x="0" y="380">★ centri di cluster · cluster centers   ◯ frontiera asintotica · asymptotic boundary</text>
+  </g>
+
+  <!-- Right panel: distances and threshold sketch -->
+  <g transform="translate(540,210)">
+    <text class="legend" x="0" y="0">Distribuzione delle distanze iperboliche (campione) · Sampled hyperbolic distance distribution</text>
+    <!-- Histogram bars synthesised to match real bench.jsonl counts -->
+    <g transform="translate(0,20)" fill="#7aa2ff">
+      <rect x="0"   y="120" width="14" height="40"/>
+      <rect x="16"  y="135" width="14" height="25"/>
+      <rect x="32"  y="113" width="14" height="47"/>
+      <rect x="48"  y="63"  width="14" height="97"/>
+      <rect x="64"  y="65"  width="14" height="95"/>
+      <rect x="80"  y="80"  width="14" height="80"/>
+      <rect x="96"  y="63"  width="14" height="97"/>
+      <rect x="112" y="100" width="14" height="60"/>
+      <rect x="128" y="128" width="14" height="32"/>
+      <rect x="144" y="116" width="14" height="44"/>
+      <rect x="160" y="132" width="14" height="28"/>
+      <rect x="176" y="147" width="14" height="13"/>
+      <rect x="192" y="149" width="14" height="11"/>
+      <rect x="208" y="143" width="14" height="17"/>
+      <rect x="224" y="156" width="14" height="4"/>
+      <rect x="240" y="153" width="14" height="7"/>
+      <rect x="256" y="157" width="14" height="3"/>
+      <rect x="272" y="157" width="14" height="3"/>
+      <rect x="288" y="158" width="14" height="2"/>
+      <rect x="304" y="159" width="14" height="1"/>
+    </g>
+    <line x1="0" y1="180" x2="320" y2="180" stroke="#3b4a83"/>
+    <!-- threshold marker around p35 (=0.51 of 2.4 axis ≈ 21% of width = 67px) -->
+    <g>
+      <line x1="68" y1="20" x2="68" y2="180" stroke="#ffd166" stroke-dasharray="4 3" stroke-width="1.5">
+        <animate attributeName="x1" values="50;90;50" dur="6s" repeatCount="indefinite"/>
+        <animate attributeName="x2" values="50;90;50" dur="6s" repeatCount="indefinite"/>
+      </line>
+      <text x="74" y="36" fill="#ffd166" font-size="11" font-weight="700">soglia / threshold</text>
+    </g>
+    <text class="legend" x="0" y="200">0.0</text>
+    <text class="legend" x="300" y="200">~2.4 (acosh)</text>
+    <text class="legend" x="0" y="225">mediana 0.68 · MAD 0.26 · σ≈0.39 · p95 1.49 · scelto: percentile</text>
+  </g>
+
+  <!-- Right-far: clusters bag -->
+  <g transform="translate(940,210)">
+    <text class="legend" x="0" y="0">Cluster trovati · Clusters found</text>
+    <g transform="translate(0,20)">
+      <rect width="200" height="50" rx="8" fill="#3a1f2a" stroke="#ff8fa3"/>
+      <text class="word" x="10" y="20" fill="#ff8fa3" font-weight="700">cluster A · "la"</text>
+      <text class="sub"  x="10" y="38" fill="#ffb1c1">63 parole · words</text>
+
+      <rect y="60" width="200" height="40" rx="8" fill="#1a2c33" stroke="#8be9fd"/>
+      <text class="word" x="10" y="80" fill="#8be9fd" font-weight="700">cluster B · "pensieri"</text>
+      <text class="sub"  x="10" y="94" fill="#a8e7ff">1 parola · word</text>
+
+      <rect y="110" width="200" height="40" rx="8" fill="#2e3014" stroke="#f1fa8c"/>
+      <text class="word" x="10" y="130" fill="#f1fa8c" font-weight="700">cluster C · "regolare"</text>
+      <text class="sub"  x="10" y="144" fill="#fff7a8">1 parola · word</text>
+    </g>
+    <text class="legend" x="0" y="190">Stima · Estimate: ratio 0.455 · savings 54.5%</text>
+  </g>
+
+  <!-- Footer caption -->
+  <g transform="translate(40,560)">
+    <rect width="1120" height="44" rx="8" fill="#0f1735" stroke="#2c3e7a"/>
+    <text class="step" x="14" y="20">Idea</text>
+    <text class="legend" x="60" y="20">Le parole imparentate stanno vicine in uno spazio curvo; i cluster ne raccolgono il senso e ne riducono la ridondanza.</text>
+    <text class="step" x="14" y="36">Idea</text>
+    <text class="legend" x="60" y="36">Related words sit close in a curved space; clusters gather meaning and squeeze redundancy. Toy compression model — not a byte-level codec.</text>
+  </g>
+
+  <!-- Stage activation cycle: highlight one card at a time -->
+  <g>
+    <set xlink:href="#s1" attributeName="class" to="stage active" begin="0s"     dur="2s"/>
+    <set xlink:href="#s2" attributeName="class" to="stage active" begin="2s"     dur="2s"/>
+    <set xlink:href="#s3" attributeName="class" to="stage active" begin="4s"     dur="2s"/>
+    <set xlink:href="#s4" attributeName="class" to="stage active" begin="6s"     dur="2s"/>
+    <set xlink:href="#s5" attributeName="class" to="stage active" begin="8s"     dur="2s"/>
+    <set xlink:href="#s6" attributeName="class" to="stage active" begin="10s"    dur="2s"/>
+    <set xlink:href="#s7" attributeName="class" to="stage active" begin="12s"    dur="2s"/>
+    <set xlink:href="#s8" attributeName="class" to="stage active" begin="14s"    dur="2s"/>
+    <animate xlink:href="#s1" attributeName="class" to="stage" begin="16s" dur="0.01s" fill="freeze"/>
+  </g>
+</svg>
