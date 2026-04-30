@@ -21,18 +21,18 @@ Interactive version with play, pause and bilingual captions: [`pipeline.html`](.
 ```mermaid
 mindmap
   root((HyperbolicTextCompressor<br/>Limiti · Limits))
-    Compressione "giocattolo"
-      Stima = cluster + 50% mappatura
+    Compressione giocattolo
+      Stima cluster + 50% mappatura
       Non è un codec a livello byte
-      Niente confronto con gzip / Brotli
+      Niente confronto con gzip o Brotli
     Costo
-      Distanze a coppie O(V²)
-      Mitigato da k-NN prefilter (O(V·K))
+      Distanze a coppie O di V al quadrato
+      Mitigato da k-NN prefilter — O di V·K
       Ancora niente streaming
     Sensibilità ai parametri
       windowSize
       clusterThreshold
-      projection (random / firstD / svd)
+      projection — random · firstD · svd
       randomFeaturesPerDim
     Corpora piccoli
       Distanze collassano vicino a 0
