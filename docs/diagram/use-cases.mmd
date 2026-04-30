@@ -1,0 +1,34 @@
+---
+title: Casi d'uso · Use cases
+---
+flowchart LR
+  Root([HyperbolicTextCompressor]):::root
+  Root --> R[Ricerca · Research]
+  Root --> D[Didattica · Teaching]
+  Root --> N[NLP esplorativo · Exploratory NLP]
+  Root --> B[Benchmarking pipeline]
+  Root --> E[Sandbox embedding]
+
+  R --> R1[Geometria iperbolica per il linguaggio]
+  R --> R2[Confronti con Poincaré GloVe]
+  R --> R3[Esperimenti su gerarchie semantiche]
+
+  D --> D1[Lezioni su union-find]
+  D --> D2[Lezioni su matrici sparse]
+  D --> D3[Visualizzare il disco di Poincaré]
+
+  N --> N1[Trovare famiglie di parole]
+  N --> N2[Riassunto di vocabolario]
+  N --> N3[Pulizia dataset · cluster di stop-words]
+
+  B --> B1[Sweep parametri e proiezioni]
+  B --> B2[Diagnostica auto-threshold]
+  B --> B3[Confronto k-NN vs full O(V²)]
+
+  E --> E1[Provare seed e robustezza]
+  E --> E2[Testare nuove distanze]
+  E --> E3[Plug-in di nuovi proiettori]
+
+  classDef root fill:#1c2a55,stroke:#7aa2ff,color:#e6ecff,stroke-width:2px;
+  classDef leaf fill:#0f1735,stroke:#2c3e7a,color:#9fb0e2;
+  class R,D,N,B,E,R1,R2,R3,D1,D2,D3,N1,N2,N3,B1,B2,B3,E1,E2,E3 leaf;

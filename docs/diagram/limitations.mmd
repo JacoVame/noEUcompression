@@ -1,0 +1,32 @@
+---
+title: Limiti onesti del prototipo · Honest limitations
+---
+mindmap
+  root((HyperbolicTextCompressor<br/>Limiti · Limits))
+    Compressione "giocattolo"
+      Stima = cluster + 50% mappatura
+      Non è un codec a livello byte
+      Niente confronto con gzip / Brotli
+    Costo
+      Distanze a coppie O(V²)
+      Mitigato da k-NN prefilter (O(V·K))
+      Ancora niente streaming
+    Sensibilità ai parametri
+      windowSize
+      clusterThreshold
+      projection (random / firstD / svd)
+      randomFeaturesPerDim
+    Corpora piccoli
+      Distanze collassano vicino a 0
+      Auto-threshold tende a 1e-6
+      Cluster banali
+    Lingua e dominio
+      Testato su italiano
+      Comportamento su altre lingue non validato
+      Niente lemmatizzazione, niente stop-words
+    Dipendenze opzionali
+      SVD richiede ml-matrix o svd-js
+      Fallback grazioso se mancano
+    Niente decompressore
+      Solo stima
+      Mappatura non invertibile lossless
