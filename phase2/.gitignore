@@ -1,0 +1,6 @@
+.venv/
+.venv-path
+out/
+__pycache__/
+*.pyc
+nltk_data/
