@@ -78,7 +78,9 @@ def _pairwise(coords):
 
 def _ranking_loss(dist, src, dst, neg_mask):
     """-log softmax of the gold neighbour against all non-neighbours."""
-    neg_logits = torch.where(neg_mask, -dist, torch.full_like(dist, -torch.inf))
+    # scalar rather than full_like: same values bit for bit, one (n, n) float64
+    # allocation fewer per epoch (11 MB at wordnet size, 6000 epochs)
+    neg_logits = torch.where(neg_mask, -dist, -torch.inf)
     neg_lse = torch.logsumexp(neg_logits, dim=1)          # per source node
     positive = -dist[src, dst]
     return (torch.logaddexp(neg_lse[src], positive) - positive).mean()
