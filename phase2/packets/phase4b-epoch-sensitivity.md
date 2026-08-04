@@ -66,8 +66,9 @@ exist in out/ as checkpoints and must be reused, not recomputed. Run in the
 background and checkpoint as results land; if you must bound anything, log
 exactly what was dropped.
 
-Finally: add a Phase-4b row to the phase table in README-fase2.md and record the
-result under the Phase-4 section, with the date. If the scan shows the budget
+Finally: the phase table in README-fase2.md already carries a Phase-4b row marked
+"packet ready, not run" — mark it done with the date, and record the result under
+the Phase-4 section. If the scan shows the budget
 does not bind, say that the stated Phase-4 limitation is now bounded rather than
 removed — it is still not a per-dimension tuning.
 ```
