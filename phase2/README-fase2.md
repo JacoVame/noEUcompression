@@ -35,6 +35,7 @@ phase2/
   harness/         # datasets.py, metrics.py, plots.py (Phase 1) — FROZEN after Phase 1
   embeddings/      # euclidean.py (Phase 2), lorentz.py (Phase 3)
   ablation.py      # Phase 4 driver
+  packets/         # session briefs for the phases not yet executed
   out/             # artifacts (git-ignored); every filename embeds the seed
 ```
 
@@ -160,6 +161,11 @@ table and the figures runs the sweep and gets their own, at the cost recorded
 above.
 
 ### Handoff into Phases 5-6
+
+The session briefs are written and live in [`packets/`](packets/README.md):
+Phase 4b (epoch-budget sensitivity — run it before Phase 6, because the article
+is going to technical review), Phase 5 (optional, blocked on two premises stated
+inside it) and Phase 6 (article §4).
 
 What the next packet inherits, and what it must not re-decide:
 
