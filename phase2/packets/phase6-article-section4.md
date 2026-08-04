@@ -1,109 +1,101 @@
-# Packet — Phase 6: article upgrade (carta 02, §4)
+# Packet — Phase 6: carta 02 "Misurare l'Invisibile"
 
-**What was located on 2026-08-04, so no session repeats the search.**
+**The premise was corrected on 2026-08-04.** An earlier version of this packet
+assumed carta 02 existed and needed its §4 upgraded. It does not exist: it is to be
+**written**, from the Phase-2 programme results, in a separate Claude project (web
+side). Only its teaser image is on disk
+(`C:\Users\gianluca.g\Downloads\teaser_carta02_misurare_invisibile.png`,
+2026-08-03). Carta 01 — *"Mappare l'Invisibile"* — is on disk at
+`C:\Users\gianluca.g\Downloads\mappare_invisibile_v2.md` (Italian, ~17k chars,
+§1-§4 plus *Sintesi* and *Cosa questo articolo non afferma*).
 
-- **carta 01 is on disk**: `C:\Users\gianluca.g\Downloads\mappare_invisibile_v2.md`
-  — *"Mappare l'Invisibile — SOM e Grandi Modelli Linguistici"*, Italian, ~17k
-  characters, July 2026. Its structure is §1 Il Ponte Topologico, §2 Implicazioni
-  architetturali, §3 Prospettive future, **§4 La questione della curvatura**,
-  then *Sintesi* and *Cosa questo articolo non afferma*. A LinkedIn variant sits
-  beside it (`mappare_invisibile_linkedin_v2_romantica.txt`).
-- **carta 02 is "Misurare l'Invisibile"**: only its teaser image is on disk,
-  `C:\Users\gianluca.g\Downloads\teaser_carta02_misurare_invisibile.png`
-  (2026-08-03). The text lives in a Claude project (web side) per the PM, not on
-  the filesystem, and not in the Obsidian vault. **The PM must paste or export
-  it**; do not go hunting.
-- **Why this phase exists, in the article's own words.** §4 of carta 01 says of
-  this very repository: *«non apprende gli embedding (fa una proiezione casuale e
-  un riscalamento radiale — usa la metrica curva, ma non colloca le parole per
-  gerarchia)»*. Phases 2-4 closed exactly that gap: the embeddings are now
-  learned by Riemannian optimisation on a gold hierarchy, and the comparison
-  against a matched Euclidean baseline is measured, seeded and reproducible. The
-  chart is that evidence.
-- **The nuance that must survive editing.** §4 of carta 01 argues that hyperbolic
-  space has room for trees because disc area grows exponentially with the radius.
-  Phase 4 says this pays **where dimension is scarce** — decisively at d=2 — and
-  stops paying on reconstruction by d=5, where the Euclidean baseline overtakes on
-  MAP and mean rank. Carta 02 gains its credibility from reporting the second half.
+So this repository's job for Phase 6 is **not to write the article**. It is to
+supply everything the writing project needs, and later to verify the draft against
+the artifacts.
 
-Paste the block below as the opening message of a fresh session, after adding the
-carta 02 text (or its path) at the marked point.
+## What has already been delivered (2026-08-04)
+
+- **[`../report/carta02-dossier.md`](../report/carta02-dossier.md)** — the evidence
+  dossier, in Italian, self-contained: the question inherited from §4 of carta 01,
+  the measuring apparatus and why it was frozen first, the fairness protocol
+  (F1/F2/F3, the regression gate, the per-(geometry, dimension) tuning), the full
+  result table, the crowding mechanism with the measured spreads, the depth band,
+  ready-to-use figure captions, the list of things the article must NOT claim, a
+  claim-to-evidence table, the reproduction command, and a proposed section
+  structure. Every number in it traces to an `out/` artifact.
+- **`out/carta02-bundle/`** and **`out/carta02-bundle.zip`** (~280 KB, git-ignored
+  like everything in `out/`) — the dossier plus the three figures plus the
+  aggregate table in `.md` and `.json`, assembled for upload into the Claude
+  project. Regenerate the bundle by re-running the Phase-4 command and copying the
+  same six files.
+
+## What the writing project needs from a human
+
+Upload `out/carta02-bundle.zip` (or its six files) into the Claude project for
+carta 02. The dossier is written to be the single source of truth there: it is
+deliberately in Italian, which is the one exception to the English rule for
+`phase2/` docs, because it feeds an Italian article.
+
+## What remains for a Phase-6 session in this repository
+
+Two jobs, both verification rather than authorship. Paste the block below when the
+draft of carta 02 exists.
 
 ```text
-Read ./CLAUDE.md and ./README-fase2.md. Current phase: 6 (article upgrade,
-carta 02 "Misurare l'Invisibile" — §4 gains a real chart).
+Read ./CLAUDE.md, ./README-fase2.md and ./report/carta02-dossier.md. Current phase:
+6 (carta 02 "Misurare l'Invisibile").
 
-Precondition: Phase 4b (epoch-sensitivity addendum) must be done and recorded in
-README-fase2.md, because the article may go to technical review and the epoch
-budget is the one open methodological question. If 4b is not recorded, stop and
-say so rather than writing around it.
+carta 02 is authored in a separate Claude project, not here. Your job is the two
+things that project cannot do for itself, because it has no access to the
+artifacts.
 
-Context you must read before writing, in this order:
-  1. C:\Users\gianluca.g\Downloads\mappare_invisibile_v2.md — carta 01. Read §4
-     ("La questione della curvatura") in full and the closing section "Cosa questo
-     articolo *non* afferma". That §4 states that this repository does NOT learn
-     its embeddings, only reuses the curved metric. Phase 2-4 is what changed
-     that, and §4 of carta 02 is where the change gets reported.
-  2. <<PM: paste the carta 02 text here, or give its path>>. Match its section
-     numbering; if its §4 already exists, you are upgrading it, not appending.
-  3. The Phase-4 result section of README-fase2.md.
+Job 1 — keep the dossier true. If Phase 4b has landed since the dossier was
+written (2026-08-04), fold its result into §7 ("Cosa carta 02 non deve affermare")
+and §8 ("Cosa manca ancora") of report/carta02-dossier.md: the epoch-budget caveat
+either becomes bounded or becomes a real limitation, and the dossier must say
+which. Re-assemble out/carta02-bundle.zip afterwards. Change nothing else in the
+dossier unless a number in it is wrong.
 
-This packet must NOT re-run experiments. Sources of truth, all read-only:
-  - out/ablation_table_wordnet-mammals_dims2-5-10_seedset20260716x5.{json,md};
-  - the three figures out/ablation_{map_vs_dimension,distortion_vs_depth,
-    distance_spread}_wordnet-mammals_dims2-5-10_seedset20260716x5.png;
-  - out/ablation_run_*.json for any per-seed number you cite.
-If out/ is empty, regenerate it with the single Phase-4 command before writing —
-artifacts are git-ignored by PM decision, so regenerating is the normal path and
-takes ~3.5 h cold. Do not invent, round differently from, or re-derive numbers
-the artifacts already state.
+Job 2 — fact-check the draft. Given the draft of carta 02 (the PM will paste it or
+give a path), verify every empirical claim against the artifacts, not against the
+dossier's prose:
+  - out/ablation_table_wordnet-mammals_dims2-5-10_seedset20260716x5.{json,md}
+  - out/ablation_run_*.json for per-seed numbers
+  - the three out/ablation_*_wordnet-mammals_dims2-5-10_seedset20260716x5.png
+If out/ is empty, regenerate it first with the single Phase-4 command (~3.5 h
+cold); artifacts are git-ignored by decision.
 
-DoD (binary): §4 of carta 02 contains a real chart — at least the
-MAP-vs-dimension figure, with mean ± σ over the 5-seed set visible and the seed
-set named — plus prose in which every number traces to an artifact, and one
-printed command that regenerates every figure and number cited.
+Report every discrepancy as a table: claim as written, what the artifact says,
+severity. Flag in particular, because these are the failure modes that matter:
+  - a number that drifted (rounding, a σ dropped, a mean rank quoted as a MAP);
+  - the d>=5 reversal being softened or omitted — hyperbolic wins unambiguously
+    only at d=2, and from d=5 the Euclidean baseline takes reconstruction outright;
+  - the distortion gap described as monotone (it is +0.0831 at d=2, -0.0012 at
+    d=5, +0.0320 at d=10);
+  - the depth advantage described as growing with depth (it is a band: crossing
+    between depth 4 and 5, best at 6, closed again by 9);
+  - MAX_SPATIAL_NORM presented as anything other than a numerical guard, or its
+    reach understated (721.4/1170 nodes at d=2, ~7% at d=5 and d=10);
+  - any claim of compression ratio or gzip comparison, which the programme's
+    non-goals forbid and Phase 5 has not delivered;
+  - prior art: Ontrup & Ritter (NIPS 2001) and Nickel & Kiela (2017, 2018) must
+    stay credited as the origin of the method — what is ours is the measurement.
 
-Deliverable shape: if the PM gave a path, edit §4 of that file in place and
-nothing else in it. Otherwise write a self-contained insert at
-phase2/report/section4.md, in Italian, ready to paste, with the three figures
-referenced by their out/ filenames and captions that stand alone.
+DoD (binary): a discrepancy report where every empirical claim in the draft is
+either confirmed against a named artifact or listed as a discrepancy, plus the
+single command that regenerates the evidence. Do not rewrite the article's prose:
+if a sentence is unsupported, say what the artifact supports instead and let the
+author choose the words.
 
-Language and voice: Italian, matching carta 01 — first person, narrative but
-technically exact, and comfortable saying what the work does not show. Do not
-flatten it into a lab report, and do not inflate it into a press release.
-
-Content requirements, in order of importance:
-  1. The headline is the WHOLE result. Hyperbolic geometry wins unambiguously
-     only at d=2 (MAP 0.7538 -> 0.8957, average distortion 0.3441 -> 0.2609);
-     from d=5 the Euclidean baseline takes reconstruction outright, and at d=10 it
-     reaches MAP 1.0000 / mean rank 1.0000 against 0.9853 / 2.4549. The
-     distortion edge does not close monotonically (+0.0831 at d=2, -0.0012 at
-     d=5, +0.0320 at d=10). Reporting only the d=2 win would be cherry-picking
-     inside a phase set built to prevent exactly that — and it would contradict
-     carta 01's own "cosa non afferma" discipline.
-  2. Close the loop with carta 01 explicitly: §4 there confesses the embeddings
-     were not learned; say that they now are, by Riemannian optimisation on the
-     Lorentz model against a WordNet gold hierarchy, and that the comparison is
-     matched per geometry.
-  3. State the fairness protocol, because it is the article's defence: per-
-     (geometry, dimension) learning rates tuned on synthetic-tree only and frozen
-     before any wordnet run; the report set run once; the epoch budget held at
-     6000 for both geometries with 4b's sensitivity result attached.
-  4. Report the mean-rank penalty as a mechanism, not a footnote: hyperbolic mean
-     rank is worse at every d, and the spread figure shows why — hyperbolic is
-     *under*-spread against the graph metric (σ/mean 0.135 vs 0.293) while
-     Euclidean at d=2 is over-spread (0.513). This is the measured form of the
-     crowding that §1 and §4 of carta 01 discuss qualitatively.
-  5. Say that MAX_SPATIAL_NORM 1e4 is a numerical guard and quantify its reach
-     (721/1170 nodes at d=2, ~7% at d=5 and d=10), so no reviewer can mistake it
-     for a capacity knob that manufactured the result.
-  6. Keep the non-goals visible: no gzip comparison, no claim of real
-     compression, no Poincaré-GloVe, and the honest citation of prior art that
-     carta 01 already makes (Ontrup & Ritter's hyperbolic SOM, NIPS 2001; Nickel
-     & Kiela 2017/2018). This is a geometry measurement on a gold hierarchy.
-
-Scope: create only the section text (or edit §4 of the document the PM supplied).
-Do not touch eval.py, harness/, embeddings/, or the sealed parts of ablation.py;
-do not edit the JS companion; do not restyle the figures to suit the article — if
-a figure is unusable as published, say why instead of quietly replacing it.
+Do not touch eval.py, harness/, embeddings/, or the sealed parts of ablation.py.
+Do not restyle the figures. Do not edit the JS companion.
 ```
+
+## The one thing the article must keep
+
+§4 of carta 01 argues that hyperbolic space has room for trees because disc area
+grows exponentially with radius, and confesses that this repository did not learn
+its embeddings. Phase 2-4 closed the confession — the embeddings are learned now —
+and *qualified* the argument: the geometry pays where dimension is scarce,
+decisively at d=2, and stops paying on reconstruction by d=5. Carta 02 earns its
+credibility by reporting the second half.
