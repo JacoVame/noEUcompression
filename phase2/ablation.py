@@ -218,9 +218,12 @@ def run_once(geometry, dataset, dim, seed, out_dir, lr, epochs, tag="run"):
         "pairs_by_depth": result["pairs_by_depth"],
         "hist_density": [float(x) for x in density],
         "hist_overflow_fraction": overflow,
-        "emb_spread_sigma_over_mean": float(emb_pairs.std() / emb_pairs.mean()),
-        "graph_spread_sigma_over_mean": float(graph_pairs.std() / graph_pairs.mean()),
-        "max_emb_distance": float(emb_pairs.max() / result["distortion_scale"]),
+        "emb_spread_sigma_over_mean": (
+            float(emb_pairs.std() / emb_pairs.mean()) if emb_pairs.mean() > 0 else 0.0),
+        "graph_spread_sigma_over_mean": (
+            float(graph_pairs.std() / graph_pairs.mean()) if graph_pairs.mean() > 0 else 0.0),
+        "max_emb_distance": (
+            float(emb_pairs.max() / result["distortion_scale"]) if result["distortion_scale"] > 0 else float("inf")),
         "clip_bound_nodes": _clip_bound_nodes(geometry, module, coords),
         "wall_seconds": wall,
     }
