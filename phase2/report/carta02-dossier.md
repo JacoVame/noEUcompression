@@ -15,7 +15,9 @@ Fase 4 del programma `phase2` e si rigenera con un solo comando (§10). Nessun
 numero è stimato, arrotondato a mano o ricordato.
 
 Data: 2026-08-04 · repository `noEUcompression`, branch `phase2` (PR #7) ·
-seed set `20260716..20260720`.
+seed set `20260716..20260720`. **Aggiornato il 2026-08-04 con la Fase 4b** (§4b):
+la scansione del budget di epoche è stata eseguita e il suo esito cambia una delle
+frasi che carta 02 può scrivere — si legga §4b prima di §4.
 
 ---
 
@@ -107,6 +109,10 @@ sembra costruito attorno a ciò che ha trovato.
   0.9357 per lr 0.003 → 0.005 → 0.01 → 0.03; a d=10: 0.9669 → 0.9632 → 0.9552 →
   0.9417), e crolla se si scende troppo (lr 0.001: 0.8065 a d=5, 0.8300 a d=10),
   quindi 0.003 è un massimo interno, non un estremo della griglia.
+  → **Dove F2 resta scoperta, e adesso lo sappiamo di quanto**: l'altro asse che
+  F2 nomina — il budget di epoche — *non* è tarato per dimensione. La Fase 4b l'ha
+  scansionato e il verdetto è che vincola: le due geometrie vogliono budget
+  diversi alla stessa dimensione. §4b, per intero.
 - **F3** — se i numeri non sono riproducibili da un seme più un solo comando, non
   sono evidenza: sono un aneddoto.
   → §10.
@@ -158,6 +164,85 @@ euclidea 0.2189 a d=5 e 0.2433 a d=10, contro 0.1953 e 0.1959 iperboliche). È p
 questo che il set di riferimento è
 WordNet e non l'albero sintetico — e la scelta era già stata dichiarata prima di
 sapere che il sintetico saturasse.
+
+## 4b. Il budget di epoche, scansionato (Fase 4b, 2026-08-04)
+
+Il §7 dichiara che il budget di epoche non è tarato per dimensione: 6000 per
+entrambe le geometrie a ogni d, perché 6000 era l'ottimo a d=2 per entrambe. La
+Fase 4b l'ha scansionato su {1500, 3000, 4500, 6000}, **solo sull'albero
+sintetico** (il set di riferimento è speso e non può informare una manopola), ai
+learning rate congelati — si muove un asse, non due — sui semi {20260716, 12345,
+777}, media ± σ. **d=2 non è stato riscansionato**: il suo budget era già stato
+cercato sullo stesso intervallo *insieme* al learning rate nelle Fasi 2 e 3, sugli
+stessi semi, ed è pubblicato.
+
+**L'esito non è quello comodo: il budget vincola.**
+
+| d | geometria | metrica | 1500 | 3000 | 4500 | 6000 (Fase 4) |
+|---|---|---|---|---|---|---|
+| 5 | euclidea | MAP | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| 5 | euclidea | distorsione | 0.2208 ± 0.0048 | 0.2198 ± 0.0042 | 0.2193 ± 0.0040 | **0.2189 ± 0.0038** |
+| 5 | iperbolica | MAP | 0.7793 ± 0.0120 | 0.8281 ± 0.0023 | 0.9129 ± 0.0022 | **0.9573 ± 0.0016** |
+| 5 | iperbolica | distorsione | 0.2034 ± 0.0029 | 0.1922 ± 0.0020 | **0.1884 ± 0.0016** | 0.1953 ± 0.0013 |
+| 10 | euclidea | MAP | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| 10 | euclidea | distorsione | **0.2387 ± 0.0006** | 0.2409 ± 0.0007 | 0.2423 ± 0.0007 | 0.2433 ± 0.0007 |
+| 10 | iperbolica | MAP | 0.8045 ± 0.0104 | 0.8405 ± 0.0069 | 0.9566 ± 0.0046 | **0.9669 ± 0.0025** |
+| 10 | iperbolica | distorsione | 0.1956 ± 0.0066 | 0.1893 ± 0.0044 | **0.1861 ± 0.0034** | 0.1959 ± 0.0028 |
+
+**La risposta, in una frase.** Ai learning rate congelati, 6000 epoche **non** sono
+un ottimo interno per il lato iperbolico a nessuna delle due dimensioni — la MAP
+media guadagna ancora +0.0444 (d=5) e +0.0103 (d=10) negli ultimi 1500 epoche,
+contro σ fra i semi di 0.0016 e 0.0025, quindi 6000 è un **estremo non racchiuso**
+della scansione e non un picco — mentre il lato euclideo non può rispondere sulla
+MAP, essendo saturo a 1.0000 già da 1500 epoche su questo albero.
+
+**Tre fatti, non tre note a piè di pagina.**
+
+- **Le due geometrie vogliono budget diversi alla stessa dimensione**, che è
+  esattamente ciò di cui parla F2. Il budget più economico indistinguibile dal
+  miglior valore della cella (stessa regola a un σ) è **1500 per l'euclidea** a
+  entrambe le d e **6000 per l'iperbolica** a entrambe — e per l'iperbolica 6000
+  non è nemmeno dimostrato *sufficiente*, essendo il tetto della scansione. Il
+  budget condiviso è il **soffitto della geometria che perde e il surplus di quella
+  che vince**.
+- **Sulla distorsione 6000 è oltre il minimo in tre celle su quattro**: iperbolica
+  d=5 (0.1884 a 4500 → 0.1953 a 6000), iperbolica d=10 (0.1861 a 4500 → 0.1959),
+  euclidea d=10 (0.2387 a 1500 → 0.2433). Tutti e tre i divari superano la σ di
+  entrambi gli estremi. Solo l'euclidea a d=5 ha il minimo a 6000. Quindi MAP e
+  distorsione chiedono spostamenti **opposti** del budget sul lato iperbolico: più
+  epoche per la MAP, meno per la distorsione.
+- **La MAP non informa sull'euclidea sopra d=2 su questo albero** — 1.0000 a ogni
+  budget, la stessa saturazione già incontrata dalla ricerca del learning rate. Il
+  suo verdetto piatto non è prova che il budget le vada bene: è prova che l'albero
+  sintetico smette di misurare la ricostruzione. È la stessa ragione per cui il set
+  di riferimento è WordNet.
+
+**Cosa è a rischio e cosa no — la parte che carta 02 deve rispettare.** Il titolo
+del risultato, la vittoria iperbolica a **d=2, non è a rischio**: più epoche
+aiuterebbero solo il lato che già vince, e il budget di d=2 è stato cercato insieme
+al learning rate ed è pubblicato. È esposta l'**altra metà**, il ribaltamento a
+d≥5. Indicativamente — è un'inferenza fra dataset, non una misura — i divari di MAP
+su WordNet a d≥5 valgono 0.0032 (d=5) e 0.0147 (d=10), entrambi **più piccoli** del
+guadagno residuo per 1500 epoche che il lato iperbolico sta ancora realizzando sul
+sintetico al confine del budget. Il ribaltamento a d≥5 potrebbe quindi essere
+determinato dal budget e non dalla geometria.
+
+**Per carta 02, in pratica:** la frase su d=2 si scrive come sta in §9. La frase sul
+ribaltamento a d≥5 va scritta **con la riserva sul budget** («ai 6000 epoche
+condivise, con il lato iperbolico non ancora a convergenza su questo banco»),
+oppure il budget va racchiuso prima. Scriverla senza riserva è l'unica cosa che
+questa fase vieta.
+
+**Il buco, dichiarato invece che nascosto.** La scansione non racchiude da sopra
+l'argmax iperbolico: i quattro budget si fermano sul valore congelato. Chiuderlo è
+un comando e circa mezz'ora di calcolo, e **non è stato eseguito** di proposito,
+perché l'unica azione che giustificherebbe — rifare il set di riferimento con un
+budget più grande — è una ri-taratura su WordNet, e quella è una decisione del PM,
+non di chi implementa:
+
+```
+python ablation.py --epoch-scan 6000 7500 9000 --dataset synthetic-tree --dims 5 10 --out out/
+```
 
 ## 5. Il meccanismo: il crowding, misurato
 
@@ -216,7 +301,9 @@ Tre PNG, tutte a media ± σ sui 5 semi, nessuna con un seme scelto a mano. Vivo
    *Didascalia pronta:* «MAP di ricostruzione filtrata su WordNet-mammals (1170
    synset) contro la dimensione intrinseca. Media ± σ su 5 semi. Il vantaggio
    iperbolico a d=2 (0.8957 contro 0.7538) si annulla a d=5 e si inverte a d=10,
-   dove il baseline euclideo ricostruisce perfettamente.»
+   dove il baseline euclideo ricostruisce perfettamente. Entrambe le geometrie a
+   6000 epoche: si veda §4b, il lato iperbolico non è a convergenza a quel budget
+   sul banco di taratura.»
 
 2. `ablation_distortion_vs_depth_wordnet-mammals_dims2-5-10_seedset20260716x5.png`
    — tre pannelli (d=2, 5, 10), distorsione media per profondità dell'estremo più
@@ -267,17 +354,25 @@ revisione.
   sintetico la MAP vale 0.9222 / 0.9220 / 0.9222 con vincolo 1e3 / 1e4 / 1e5, e a
   1e5 nessun nodo lo raggiunge. Solo un valore mutilante (1e2, distanza massima
   10.6, sotto il diametro del grafo) cambia la risposta, a 0.7940.
-- **Il budget di epoche non è tarato per dimensione.** 6000 per entrambe le
-  geometrie a ogni d, che era l'ottimo a d=2 per entrambe. È l'unico asse su cui
-  l'ablazione è più debole della lettura ideale di F2, ed è dichiarato come tale.
-  La verifica di sensibilità è la Fase 4b, programmata prima della pubblicazione.
+- **Il budget di epoche non è tarato per dimensione, e la Fase 4b ha mostrato che
+  questo vincola.** 6000 per entrambe le geometrie a ogni d, che era l'ottimo a d=2
+  per entrambe. È l'unico asse su cui l'ablazione è più debole della lettura ideale
+  di F2, ed è dichiarato come tale. La scansione (§4b) non l'ha assolto: a d=5 e
+  d=10 l'euclidea è già a regime a 1500 epoche mentre l'iperbolica sta ancora
+  guadagnando MAP a 6000, quindi il budget condiviso favorisce sistematicamente il
+  lato che vince a quelle dimensioni. **Conseguenza per il testo:** il
+  ribaltamento a d≥5 non va affermato come proprietà della geometria senza la
+  riserva sul budget; la vittoria a d=2 sì, e resta intatta.
 
 ## 8. Cosa manca ancora
 
-- **Fase 4b** (in coda, prima della pubblicazione): scansione del budget di epoche
-  {1500, 3000, 4500, 6000} ai learning rate congelati, solo sull'albero sintetico,
-  per rispondere a «il risultato dipende dalle epoche?». Se carta 02 va in revisione
-  tecnica, questa risposta va allegata.
+- **Fase 4b** — **eseguita il 2026-08-04**, §4b. Risposta: sì, in parte il risultato
+  dipende dalle epoche, e nella direzione sfavorevole al ribaltamento a d≥5. Resta
+  aperta una sola cosa, e non è una lacuna di metodo ma una decisione: se racchiudere
+  il budget iperbolico sopra 6000 (un comando, §4b) e, in caso, se rifare il set di
+  riferimento a un budget più grande. Quest'ultima è una ri-taratura su WordNet, che
+  solo il PM può autorizzare. Se carta 02 va in revisione tecnica, §4b va allegato
+  per intero: è la risposta alla prima domanda che un revisore farà.
 - **Fase 5** (opzionale, bloccata su una premessa reale): l'end-to-end con la
   pipeline di compressione. Il blocco non è tecnico ma di sostanza — la Fase 2-4
   immerge *synset* inglesi di WordNet, la pipeline raggruppa *parole* di un testo, e
@@ -293,7 +388,7 @@ questa tabella, non è ancora sostenuta.
 | Affermazione | Evidenza |
 |---|---|
 | A dimensione 2 la curvatura paga, e paga molto | MAP 0.7538 → 0.8957 (+18.8% relativo), distorsione 0.3441 → 0.2609 (−24.2%), σ non sovrapposte su 5 semi |
-| Il vantaggio è un fenomeno di *bassa* dimensione | da d=5 l'euclidea guida MAP e rango; a d=10 ricostruisce perfettamente (1.0000 / 1.0000) |
+| Il vantaggio è un fenomeno di *bassa* dimensione — **ai 6000 epoche condivise** | da d=5 l'euclidea guida MAP e rango; a d=10 ricostruisce perfettamente (1.0000 / 1.0000). La riserva non è cosmetica: §4b mostra che a d≥5 l'iperbolica non è a convergenza a quel budget, quindi la frase va scritta con la condizione, non senza |
 | Il vantaggio sulla distorsione però non svanisce | divario +0.0320 a d=10, con σ 0.0015 e 0.0009: piccolo ma fuori dal rumore |
 | L'euclidea a d=10 ricostruisce meglio *e* distorce di più | MAP 1.0000 con distorsione 0.2927, contro 0.9853 e 0.2606: ordinare bene i vicini non è preservare le distanze |
 | Le due geometrie sbagliano in direzioni opposte | σ/media 0.5130 (euclidea) e 0.1353 (iperbolica) contro 0.2927 del grafo, a d=2 |
@@ -301,7 +396,10 @@ questa tabella, non è ancora sostenuta.
 | Il vantaggio vive in una fascia di profondità, non cresce con essa | a d=2: profondità 1 → 1.533 (iperbolica) vs 0.596 (euclidea); profondità 6 → 0.184 vs 0.343; profondità 9 → 0.326 vs 0.307, richiuso |
 | Il confronto è equo per costruzione | lr tarato per (geometria, dimensione) sul solo albero sintetico e congelato prima di WordNet; l'ottimo iperbolico si sposta (0.005 → 0.003) |
 | I numeri non sono un aneddoto | cancello di regressione a quattro decimali su quattro celle; 5 semi; un comando |
-| L'albero sintetico non basta come banco di prova | euclidea satura a MAP 1.0000 e rango 1.0000 a d≥5 per ogni lr della griglia |
+| L'albero sintetico non basta come banco di prova | euclidea satura a MAP 1.0000 e rango 1.0000 a d≥5 per ogni lr della griglia — e, §4b, per ogni budget di epoche della scansione |
+| Le due geometrie non vogliono lo stesso budget di calcolo | §4b: budget minimo indistinguibile dal proprio ottimo 1500 per l'euclidea a d=5 e d=10, 6000 (non racchiuso da sopra) per l'iperbolica alle stesse dimensioni |
+| Ordinare bene i vicini e preservare le distanze si allenano in modo diverso | §4b: sul lato iperbolico la MAP media sale ancora a 6000 mentre la distorsione media ha il minimo a 4500 e peggiora dopo, a d=5 e a d=10 |
+| L'onestà del programma è verificabile, non dichiarata | il limite dichiarato in Fase 4 è stato scansionato in Fase 4b, l'esito è sfavorevole a metà della conclusione ed è stato registrato come tale invece di essere sepolto |
 
 ## 10. Riproducibilità
 
@@ -324,6 +422,21 @@ economica. Gli artefatti non sono versionati per decisione: si rigenerano.
 Tabella e testo completi: `out/ablation_table_wordnet-mammals_dims2-5-10_seedset20260716x5.md`
 e il JSON omonimo, che contiene anche i 30 risultati per singolo seme.
 
+La scansione della Fase 4b (§4b) si rigenera con un secondo comando, indipendente
+dal primo:
+
+```
+python ablation.py --epoch-scan 1500 3000 4500 6000 --dataset synthetic-tree --dims 5 10 --out out/
+```
+
+Semi {20260716, 12345, 777} — quelli di taratura, non quelli del set di
+riferimento, ed è deliberato: il budget è una manopola. 36 esecuzioni nuove, circa
+35 minuti sullo stesso host; le dodici celle a 6000 epoche vengono riusate dalla
+ricerca del learning rate, che le aveva prodotte con identici lr, epoche, seme e
+dataset. Tabella e testo:
+`out/ablation_epochscan_synthetic-tree_dims5-10_epochs1500-3000-4500-6000_seedset20260716-12345-777.md`
+e il JSON omonimo, con le 48 celle per singolo seme.
+
 ## 11. Una struttura possibile per carta 02
 
 Proposta, non prescrizione. Segue la logica per cui l'articolo è credibile: prima il
@@ -342,10 +455,15 @@ metro, poi la misura, poi i limiti.
 4. **Il risultato, con il grafico** — la figura MAP-vs-dimensione, la tabella, e
    subito dopo il fatto scomodo: da d=5 l'euclidea riprende il comando sulla
    ricostruzione. La tesi non è «l'iperbolico vince», è «la curvatura paga dove la
-   dimensione è avara».
+   dimensione è avara». E il ribaltamento a d≥5 va enunciato con la riserva sul
+   budget (§4b), che è anche il modo di trasformare un limite in un capitolo:
+   un'ablazione che dichiara dove è debole, e poi va a misurarlo, dice del metodo
+   più di quanto direbbe un risultato pulito.
 5. **Il crowding, misurato** — la figura degli spread e la doppia direzione
    dell'errore; il paradosso rango-contro-MAP spiegato dal guscio stretto; la curva
    in profondità come conferma localizzata dell'argomento di carta 01.
 6. **Cosa non afferma** — §7 di questo dossier, praticamente per intero.
 7. **Cosa verrebbe dopo** — la Fase 5 e la sua premessa non risolta, detta come
-   lacuna e non come promessa. E il comando, perché chi legge possa rifarlo.
+   lacuna e non come promessa; il budget iperbolico da racchiudere sopra 6000, che è
+   la lacuna più vicina e la più economica da chiudere. E i due comandi, perché chi
+   legge possa rifarli.
