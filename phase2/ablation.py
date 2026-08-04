@@ -34,6 +34,16 @@ Checkpointing: every single run is written to
 `out/ablation_run_<geometry>_<dataset>_d<dim>_seed<seed>.json` as it lands and
 is reused on a later invocation when its (lr, epochs) still match, so an
 interrupted sweep resumes instead of restarting.
+
+Phase 4b adds `--epoch-scan`, which moves the one axis the paragraph above
+declares fixed — the epoch budget — at the frozen learning rates, on
+synthetic-tree only, and reports whether 6000 binds:
+
+    python ablation.py --epoch-scan 1500 3000 4500 6000 --dataset synthetic-tree --dims 5 10 --out out/
+
+It is additive: it reuses `run_once` unchanged and passes a different `epochs`
+through the same `_hyperparams` injection. Nothing it does can move a number in
+the Phase-4 table, which is produced by the default path above.
 """
 import argparse
 import contextlib
@@ -125,6 +135,8 @@ def main(argv=None):
 
     if args.tune_synthetic:
         return tune_synthetic(args)
+    if args.epoch_scan:
+        return epoch_scan(args)
 
     seeds = seed_set(args.seed, args.seeds)
     tag = seed_tag(args.seed, args.seeds)
@@ -432,6 +444,455 @@ def tune_synthetic(args):
               f'   # mean MAP {entry["mean_map"][entry["selected_lr"]]:.4f}, '
               f'{entry["selection"]}')
     return 0
+
+
+# --------------------------------------------------------------------------- #
+# Phase 4b: epoch-budget sensitivity, on synthetic-tree only
+# --------------------------------------------------------------------------- #
+#
+# Phase 4 fixed the budget at EPOCHS for both geometries at every d (the d=2
+# optimum for both) and stated that as its one documented bound. This mode
+# answers the question that invites — does the conclusion depend on the budget? —
+# without re-tuning anything else: the learning rate stays at its LR_TABLE value,
+# so exactly one axis moves. It cannot alter the Phase-4 table: that comes from
+# `main`'s default path, and every cell here is written under its own `epochs...`
+# checkpoint tag.
+
+def epoch_scan(args):
+    """Scan the epoch budget at the frozen learning rates; say whether 6000 binds.
+
+    d=2 is not scanned. Its budget was searched over {1500, 3000, 4500, 6000}
+    jointly with the learning rate in Phases 2 and 3, on the same seeds, and is
+    published in the docstrings of `embeddings/euclidean.py` and
+    `embeddings/lorentz.py`.
+
+    Like `tune_synthetic`, this never touches wordnet-mammals and ignores
+    `--seed`: a budget is a knob, and the report set is spent.
+    """
+    if args.dataset != TUNE_DATASET:
+        raise SystemExit(
+            f"--epoch-scan runs on {TUNE_DATASET} only, not {args.dataset}: the "
+            f"epoch budget is a knob and wordnet-mammals is the report set, which "
+            f"must not inform one (F2 option b, same rule as --tune-synthetic).")
+
+    budgets = sorted(set(args.epoch_scan))
+    if EPOCHS not in budgets:
+        raise SystemExit(
+            f"the scan must include the frozen budget {EPOCHS}: the question is "
+            f"where {EPOCHS} sits on the curve, so without that cell there is "
+            f"nothing to place.")
+    dims = [d for d in args.dims if d != 2]
+    if 2 in args.dims:
+        print("d=2 not scanned by design: its budget was searched over "
+              "{1500, 3000, 4500, 6000} jointly with the learning rate in Phases "
+              "2 and 3, on these same seeds, and is published in both embedding "
+              "module docstrings. Not redone here.")
+    if not dims:
+        raise SystemExit("nothing left to scan: pass dimensions other than 2, "
+                         "e.g. --dims 5 10.")
+
+    lrs = {(g, d): _learning_rate(g, d) for g in GEOMETRIES for d in dims}
+    print(f"epoch scan - {TUNE_DATASET}, budgets {budgets}, dims {dims}, seeds "
+          f"{list(TUNE_SEEDS)}. Learning rates frozen at LR_TABLE (one axis moves):")
+    for (g, d), lr in sorted(lrs.items()):
+        print(f"  {g:<9} d={d:<3} lr={lr}")
+    print()
+
+    # The admissibility test for an additive change to a sealed driver: the gates
+    # must still pass, to the digit, before anything else runs.
+    if not regression_gate(args.out):
+        return 1
+    if not f1_gate(args.out):
+        return 1
+
+    cells = {}
+    total = len(dims) * len(GEOMETRIES) * len(budgets) * len(TUNE_SEEDS)
+    done = 0
+    for dim in dims:
+        for geometry in GEOMETRIES:
+            for epochs in budgets:
+                records = []
+                for seed in TUNE_SEEDS:
+                    done += 1
+                    print(f"[{done}/{total}] {geometry} {TUNE_DATASET} d={dim} "
+                          f"epochs={epochs} seed={seed}", flush=True)
+                    records.append(_scan_cell(geometry, dim, seed, args.out,
+                                              lrs[(geometry, dim)], epochs))
+                cell = _scan_cell_stats(records)
+                cells[f"{geometry}|{dim}|{epochs}"] = cell
+                print(f"  mean MAP {cell['map_mean']:.4f}  mean distortion "
+                      f"{cell['avg_distortion_mean']:.4f}  over {list(TUNE_SEEDS)}",
+                      flush=True)
+
+    scan = {
+        "dataset": TUNE_DATASET,
+        "dims": dims,
+        "budgets": budgets,
+        "frozen_epochs": EPOCHS,
+        "seeds": list(TUNE_SEEDS),
+        "seed_set_tag": _scan_seed_tag(),
+        "learning_rates": {f"{g}|{d}": lr for (g, d), lr in lrs.items()},
+        "n_nodes": cells[f"{GEOMETRIES[0]}|{dims[0]}|{budgets[0]}"]["n_nodes"],
+        "cells": cells,
+        "verdicts": {f"{g}|{d}": _epoch_verdict(budgets, cells, g, d)
+                     for d in dims for g in GEOMETRIES},
+    }
+    scan["sentence"] = _epoch_sentence(scan)
+    paths = _write_epoch_scan(scan, args)
+    print()
+    print(_console(epoch_scan_markdown(scan)))
+    for path in paths:
+        print(f"wrote {path}")
+    print()
+    print("reproduce every number above with:")
+    print(f"  {_interpreter()} ablation.py --epoch-scan "
+          f"{' '.join(str(e) for e in budgets)} --dataset {TUNE_DATASET} --dims "
+          f"{' '.join(str(d) for d in dims)} --out {args.out}")
+    print(f"  (seed set {list(TUNE_SEEDS)}, fixed: the budget is a knob, so the "
+          f"tuning seeds are used and --seed is ignored)")
+    return 0
+
+
+def _scan_cell(geometry, dim, seed, out_dir, lr, epochs):
+    """One scan cell, reusing an existing checkpoint of the same (lr, epochs).
+
+    The `epochs = EPOCHS` row of the scan is the Phase-4 budget, and those runs
+    already exist from the learning-rate search under its `tune_lr<lr>` tag. They
+    are the same computation — same lr, same epochs, same seed, same dataset — so
+    recomputing them would burn ~40 minutes to reproduce bytes we already have.
+    `_load_cached` still checks (lr, epochs) before accepting one.
+    """
+    legacy = os.path.join(
+        out_dir,
+        f"ablation_tune_lr{lr:g}_{geometry}_{TUNE_DATASET}_d{dim}_seed{seed}.json")
+    cached = _load_cached(legacy, lr, epochs)
+    if cached is not None:
+        print(f"    reused from the lr search: MAP {cached['map']:.4f}  "
+              f"rank {cached['mean_rank']:.4f}  "
+              f"distortion {cached['avg_distortion']:.4f}", flush=True)
+        return cached
+    return run_once(geometry, TUNE_DATASET, dim, seed, out_dir, lr, epochs,
+                    tag=f"epochs{epochs}")
+
+
+def _scan_cell_stats(records):
+    first = records[0]
+    stats = {
+        "geometry": first["geometry"],
+        "dim": first["dim"],
+        "epochs": first["epochs"],
+        "lr": first["lr"],
+        "n_nodes": first["n_nodes"],
+        "seeds": [r["seed"] for r in records],
+        "wall_seconds_total": sum(r["wall_seconds"] for r in records),
+    }
+    for key in ("map", "mean_rank", "avg_distortion"):
+        values = [r[key] for r in records]
+        stats[f"{key}_mean"] = _mean(values)
+        stats[f"{key}_sigma"] = _sigma(values)
+        stats[f"{key}_per_seed"] = values
+    return stats
+
+
+def _beyond_noise(a, b, values, sigmas):
+    """Is the gap between two budgets bigger than seed noise?
+
+    One-sigma rule, stated rather than implied: the larger of the two cells'
+    sigma across TUNE_SEEDS (ddof=1). Inside that band the curve is flat, which
+    is what a budget that does not bind looks like.
+    """
+    return abs(values[a] - values[b]) > max(sigmas[a], sigmas[b])
+
+
+def _epoch_verdict(budgets, cells, geometry, dim):
+    """Where the frozen budget sits on this cell's curves, on both metrics.
+
+    Two verdicts, because on this tree one of them is often empty: the Euclidean
+    baseline saturates MAP above d=2 (1.0000 at every budget), so distortion is
+    the only axis still moving there, while for the hyperbolic side MAP is the
+    axis that moves.
+
+    The endpoint case is called by name. An argmax at the largest budget scanned
+    is *not* an interior optimum: it is unbracketed, and the curve may still be
+    rising past the edge of the scan. `ablation.py` already refuses that for
+    learning rates (see the LR_GRID comment); the same rule applies here, so
+    "still climbing at the upper endpoint" is a distinct verdict from "at an
+    interior argmax" and never gets folded into "on a plateau".
+
+    `sufficient` is the cheapest budget indistinguishable from that cell's best
+    under the same one-sigma rule. Compared between the two geometries at one d,
+    that is the F2-relevant number — F2 is about the two sides wanting
+    *different* budgets, not about the absolute optimum.
+    """
+    means = {e: cells[f"{geometry}|{dim}|{e}"]["map_mean"] for e in budgets}
+    sigmas = {e: cells[f"{geometry}|{dim}|{e}"]["map_sigma"] for e in budgets}
+    dists = {e: cells[f"{geometry}|{dim}|{e}"]["avg_distortion_mean"]
+             for e in budgets}
+    dsigmas = {e: cells[f"{geometry}|{dim}|{e}"]["avg_distortion_sigma"]
+               for e in budgets}
+
+    best = max(means.values())
+    argmax = min(e for e in budgets if means[e] == best)  # ties -> the cheaper
+    top, previous = budgets[-1], (budgets[-2] if len(budgets) > 1 else None)
+    climbing_at_top = (means[top] == best and previous is not None
+                       and _beyond_noise(top, previous, means, sigmas))
+
+    if climbing_at_top and top == EPOCHS:
+        verdict = "still climbing at the upper endpoint"
+    elif not _beyond_noise(argmax, EPOCHS, means, sigmas):
+        verdict = "on a plateau"
+    elif argmax < EPOCHS:
+        verdict = "past the peak"
+    else:
+        verdict = "still climbing"
+
+    best_dist = min(dists.values())
+    argmin = min(e for e in budgets if dists[e] == best_dist)
+    if not _beyond_noise(argmin, EPOCHS, dists, dsigmas):
+        dist_verdict = "on a plateau"
+    elif argmin < EPOCHS:
+        dist_verdict = "past the minimum"
+    else:
+        dist_verdict = "still falling"
+
+    return {
+        "verdict": verdict,
+        "argmax_epochs": argmax,
+        "tied_at_argmax": [e for e in budgets if means[e] == best],
+        "sufficient_epochs": min(
+            e for e in budgets if not _beyond_noise(argmax, e, means, sigmas)),
+        "best_map": best,
+        "frozen_map": means[EPOCHS],
+        "map_shortfall_at_frozen": best - means[EPOCHS],
+        "map_span": best - min(means.values()),
+        "map_sigma_at_argmax": sigmas[argmax],
+        "map_gain_over_last_step": (means[top] - means[previous]
+                                    if previous is not None else 0.0),
+        "map_last_step": [previous, top],
+        "map_saturated": all(m >= 1.0 - 1e-12 for m in means.values()),
+        "distortion_verdict": dist_verdict,
+        "distortion_argmin_epochs": argmin,
+        "distortion_best": best_dist,
+        "distortion_at_frozen": dists[EPOCHS],
+        "distortion_span": max(dists.values()) - min(dists.values()),
+    }
+
+
+def _epoch_sentence(scan):
+    """The one sentence the DoD asks for, assembled from the scan so it cannot
+    drift from the table above it.
+
+    Three shapes, because the answer is genuinely different in each: the budget
+    is interior (Phase 4's limitation becomes bounded), it is past the peak
+    somewhere (Phase 4 loses a cell it claimed), or the argmax sits on the edge of
+    the scan (the budget is not shown to be enough — which for the geometry that
+    *loses* at these dimensions runs against the Phase-4 reading, not for it).
+    """
+    verdicts = scan["verdicts"]
+    keys = [f"{g}|{d}" for d in scan["dims"] for g in GEOMETRIES]
+    name = lambda k: k.replace("|", " d=")  # noqa: E731 - one expression, used 4x
+    dims_text = " and ".join(f"d={d}" for d in scan["dims"])
+
+    edge = [k for k in keys
+            if verdicts[k]["verdict"] == "still climbing at the upper endpoint"]
+    past = [k for k in keys if verdicts[k]["verdict"] == "past the peak"]
+    saturated = [k for k in keys if verdicts[k]["map_saturated"]]
+    dist_past = [k for k in keys
+                 if verdicts[k]["distortion_verdict"] == "past the minimum"]
+    dist_detail = "; ".join(
+        "{} {:.4f} at {} against {:.4f} at {}".format(
+            name(k), verdicts[k]["distortion_best"],
+            verdicts[k]["distortion_argmin_epochs"],
+            verdicts[k]["distortion_at_frozen"], EPOCHS) for k in dist_past)
+    dist_clause = (f", and on average distortion the same budget is past the "
+                   f"scanned minimum for {dist_detail}" if dist_past else "")
+
+    if not edge and not past:
+        detail = "; ".join(
+            f"{name(k)} {verdicts[k]['verdict']} (best mean MAP "
+            f"{verdicts[k]['best_map']:.4f} at {verdicts[k]['argmax_epochs']}, "
+            f"{verdicts[k]['frozen_map']:.4f} at {EPOCHS})" for k in keys)
+        return (
+            f"At the frozen learning rates on {scan['dataset']}, {EPOCHS} epochs "
+            f"is at or inside a plateau of mean MAP for both geometries at "
+            f"{dims_text} — {detail}{dist_clause} — so the Phase-4 conclusion "
+            f"does not depend on the epoch budget; the stated limitation is "
+            f"thereby bounded, not removed, since this is a one-axis sensitivity "
+            f"check at the frozen learning rates and not a per-dimension tuning "
+            f"of the budget.")
+
+    broken = ", ".join(name(k) for k in edge + past)
+    why = "; ".join(
+        f"{name(k)} {verdicts[k]['verdict']}, mean MAP still gaining "
+        f"{verdicts[k]['map_gain_over_last_step']:+.4f} from "
+        f"{verdicts[k]['map_last_step'][0]} to {verdicts[k]['map_last_step'][1]} "
+        f"epochs against a seed sigma of {verdicts[k]['map_sigma_at_argmax']:.4f}"
+        for k in edge)
+    if past:
+        why += "; " + "; ".join(
+            f"{name(k)} peaks at {verdicts[k]['argmax_epochs']} epochs "
+            f"({verdicts[k]['best_map']:.4f}) and loses "
+            f"{verdicts[k]['map_shortfall_at_frozen']:.4f} by {EPOCHS}"
+            for k in past)
+    other = (f", while {', '.join(name(k) for k in saturated)} cannot answer on "
+             f"MAP at all (saturated at 1.0000 from "
+             f"{min(verdicts[k]['sufficient_epochs'] for k in saturated)} epochs "
+             f"on this tree)" if saturated else "")
+    return (
+        f"At the frozen learning rates on {scan['dataset']}, {EPOCHS} epochs is "
+        f"NOT at or near an interior optimum for {broken} — {why} — so the budget "
+        f"is an unbracketed edge of the scan there rather than an interior "
+        f"optimum{other}{dist_clause}; the Phase-4 limitation therefore binds "
+        f"rather than being bounded, and it binds in the direction that runs "
+        f"against Phase 4's d>=5 reading, because the shared budget is the one "
+        f"the losing geometry has not finished using.")
+
+
+def epoch_scan_markdown(scan):
+    """Written to a UTF-8 file; printed through `_console`, because stdout on the
+    build host is cp1252 and cannot encode 'σ'."""
+    lines = [
+        f"# epoch-budget sensitivity (Phase 4b) — {scan['dataset']} "
+        f"({scan['n_nodes']} nodes)",
+        "",
+        f"budgets {scan['budgets']}, dims {scan['dims']}, seeds {scan['seeds']} "
+        f"(tag `{scan['seed_set_tag']}`); mean ± σ across those "
+        f"{len(scan['seeds'])} seeds, σ with ddof=1. Learning rates frozen at "
+        f"`LR_TABLE` — one axis moves, so this is a sensitivity scan and not a "
+        f"second tuning.",
+        "",
+        f"d=2 is not scanned: its budget was searched over "
+        f"{{1500, 3000, 4500, 6000}} jointly with the learning rate in Phases 2 "
+        f"and 3, on these same seeds, and is published in the docstrings of "
+        f"`embeddings/euclidean.py` and `embeddings/lorentz.py`.",
+        "",
+        "| d | geometry | lr | epochs | MAP | mean rank | avg distortion |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for dim in scan["dims"]:
+        for geometry in GEOMETRIES:
+            for epochs in scan["budgets"]:
+                c = scan["cells"][f"{geometry}|{dim}|{epochs}"]
+                frozen = " **(Phase 4)**" if epochs == EPOCHS else ""
+                lines.append(
+                    f"| {dim} | {geometry} | {c['lr']} | {epochs}{frozen} | "
+                    f"{c['map_mean']:.4f} ± {c['map_sigma']:.4f} | "
+                    f"{c['mean_rank_mean']:.4f} ± {c['mean_rank_sigma']:.4f} | "
+                    f"{c['avg_distortion_mean']:.4f} ± "
+                    f"{c['avg_distortion_sigma']:.4f} |")
+    return "\n".join(lines + [
+        "", "## findings", "", "```",
+        _finding_epoch_shape(scan),
+        _finding_epoch_matched_budget(scan),
+        "```", "",
+        "## answer", "",
+        scan["sentence"], "",
+    ])
+
+
+def _finding_epoch_shape(scan):
+    lines = [f"where {EPOCHS} sits on each curve. A gap counts as real only above "
+             f"the larger of the two",
+             f"cells' seed sigma; inside that band the curve is flat. An argmax at "
+             f"the top of the scan is",
+             f"reported as an endpoint, not as an optimum: it is unbracketed, the "
+             f"same objection this file",
+             f"already applies to a learning rate selected at a grid endpoint."]
+    for dim in scan["dims"]:
+        for geometry in GEOMETRIES:
+            v = scan["verdicts"][f"{geometry}|{dim}"]
+            lines.append(
+                f"  {geometry:<9} d={dim:<3} MAP: {v['verdict']:<36} best "
+                f"{v['best_map']:.4f} at {v['argmax_epochs']:<5} "
+                f"{EPOCHS} gives {v['frozen_map']:.4f} "
+                f"(shortfall {v['map_shortfall_at_frozen']:+.4f}, sigma at the "
+                f"argmax {v['map_sigma_at_argmax']:.4f}, last step "
+                f"{v['map_last_step'][0]}->{v['map_last_step'][1]} "
+                f"{v['map_gain_over_last_step']:+.4f}, span {v['map_span']:.4f})")
+            lines.append(
+                f"  {'':<9} {'':<5} distortion: {v['distortion_verdict']:<29} best "
+                f"{v['distortion_best']:.4f} at {v['distortion_argmin_epochs']:<5} "
+                f"{EPOCHS} gives {v['distortion_at_frozen']:.4f} "
+                f"(span {v['distortion_span']:.4f})")
+    saturated = [f"{g} d={d}" for d in scan["dims"] for g in GEOMETRIES
+                 if scan["verdicts"][f"{g}|{d}"]["map_saturated"]]
+    if saturated:
+        lines.append(
+            f"  MAP carries no information for {', '.join(saturated)}: it is "
+            f"1.0000 at every budget in the")
+        lines.append(
+            f"  scan, the same saturation the lr search hit on this tree above "
+            f"d=2. Their flat MAP verdict is")
+        lines.append(
+            f"  therefore not evidence that the budget is right for them - it is "
+            f"evidence that this tree")
+        lines.append(
+            f"  stops measuring reconstruction there. Distortion is the only axis "
+            f"still moving for them.")
+    return "\n".join(lines) + "\n"
+
+
+def _finding_epoch_matched_budget(scan):
+    lines = ["F2 - do the two geometries want *different* budgets at the same d? "
+             "The comparable",
+             "number is the cheapest budget indistinguishable from that cell's "
+             "best (same sigma rule)."]
+    for dim in scan["dims"]:
+        cheapest = {g: scan["verdicts"][f"{g}|{dim}"]["sufficient_epochs"]
+                    for g in GEOMETRIES}
+        argmaxes = {g: scan["verdicts"][f"{g}|{dim}"]["argmax_epochs"]
+                    for g in GEOMETRIES}
+        agree = len(set(cheapest.values())) == 1
+        lines.append(
+            f"  d={dim:<3} " + "   ".join(
+                f"{g} sufficient {cheapest[g]:<5} argmax {argmaxes[g]:<5}"
+                for g in GEOMETRIES)
+            + f"  -> {'same' if agree else 'DIFFERENT'} budget")
+    if all(len({scan["verdicts"][f"{g}|{dim}"]["sufficient_epochs"]
+                for g in GEOMETRIES}) == 1 for dim in scan["dims"]):
+        lines.append(f"  the two sides are satisfied by the same budget at every "
+                     f"d scanned, so the single shared")
+        lines.append(f"  {EPOCHS} does not favour one geometry over the other - "
+                     f"which is what F2 asks of it.")
+    else:
+        lines.append(f"  they are not satisfied by the same budget, so the shared "
+                     f"{EPOCHS} is generous to the cheaper")
+        lines.append(f"  side and at best barely sufficient to the other. That "
+                     f"asymmetry is the F2-relevant part,")
+        lines.append(f"  above any absolute optimum.")
+    edge = [f"{g} d={d}" for d in scan["dims"] for g in GEOMETRIES
+            if scan["verdicts"][f"{g}|{d}"]["verdict"]
+            == "still climbing at the upper endpoint"]
+    if edge:
+        lines.append(f"  and for {', '.join(edge)} it is not even sufficient: the "
+                     f"argmax is the top of the scan, so")
+        lines.append(f"  the budget those cells want is above {EPOCHS} and this "
+                     f"scan does not bracket it. The shared")
+        lines.append(f"  budget is therefore the *losing* geometry's ceiling and "
+                     f"the winning one's surplus, which is")
+        lines.append(f"  the F2 unfairness on the epoch axis rather than a bound "
+                     f"on it.")
+    return "\n".join(lines) + "\n"
+
+
+def _scan_seed_tag():
+    """TUNE_SEEDS are not consecutive, so the `seedset<base>x<k>` shorthand used
+    for the 5-seed aggregates cannot name them: they are listed in full."""
+    return f"seedset{'-'.join(str(s) for s in TUNE_SEEDS)}"
+
+
+def _write_epoch_scan(scan, args):
+    stem = (f"{scan['dataset']}_dims{'-'.join(str(d) for d in scan['dims'])}_"
+            f"epochs{'-'.join(str(e) for e in scan['budgets'])}_"
+            f"{scan['seed_set_tag']}")
+    json_path = os.path.join(args.out, f"ablation_epochscan_{stem}.json")
+    md_path = os.path.join(args.out, f"ablation_epochscan_{stem}.md")
+    with open(json_path, "w", encoding="utf-8") as fh:
+        json.dump(scan, fh, indent=2, sort_keys=True)
+        fh.write("\n")
+    with open(md_path, "w", encoding="utf-8") as fh:
+        fh.write(epoch_scan_markdown(scan))
+    return json_path, md_path
 
 
 # --------------------------------------------------------------------------- #
@@ -827,6 +1288,12 @@ def _parse_args(argv):
                    help="F2 option (b): search the learning rate per (geometry, "
                         "dimension) on synthetic-tree only, print the table to "
                         "paste into LR_TABLE, and exit")
+    p.add_argument("--epoch-scan", type=int, nargs="+", metavar="EPOCHS",
+                   help=f"Phase 4b: scan these epoch budgets at the frozen "
+                        f"LR_TABLE rates on synthetic-tree only, report whether "
+                        f"{EPOCHS} binds, and exit. Must include {EPOCHS}; d=2 is "
+                        f"skipped (published in Phases 2-3); uses the tuning seed "
+                        f"set, so --seed is ignored")
     return p.parse_args(argv)
 
 
