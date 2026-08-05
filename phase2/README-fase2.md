@@ -588,6 +588,25 @@ per-side/per-seed records
 coordinate checkpoints
 `out/compress_coords_{euclidean,lorentz}_wordnet-mammals_d{5,10}_seed<seed>.npz`.
 
+**Consistency with the pre-registered prediction** (read only now, after the
+numbers above were committed in `e82b95c`). The prediction was: "fidelity will
+NOT follow distortion" at d=10 — Euclidean producing fewer token-weighted gold
+hops than Lorentz, at *K-matched* operating points, because a d=2 comparison at
+unmatched K (72.2 vs 85.2) was called confounded. The raw direction matches:
+0.00 ± 0.00 (euclidean) vs 2.14 ± 0.13 (lorentz) at p=0.01. **But this is not a
+clean confirmation, for the same reason the prediction itself anticipated and
+this record already flagged above**: this packet's `--dims` implementation
+reuses Phase 5's percentile-threshold design exactly, which never matches K
+between sides, and at d=10 euclidean's K is 166 — the full node count, i.e. no
+clustering happened at all (the clamp binds at both operating points). The
+predicted *K-matched* test was therefore never run; what was measured is
+consistent with the prediction's direction but equally consistent with the
+much less interesting "a side that clusters nothing scores near-zero gold hops
+by construction," and this record cannot tell those apart. Distortion is not
+shown to govern downstream quality here, but nor is MAP shown to, cleanly —
+the honest reading is that d=10 needed the K-matched design the prediction
+called for and did not get it from this packet's spec.
+
 ### Driver seal (partial, signed off 2026-08-04)
 
 `ablation.py` is **partially sealed** as of 2026-08-04. Three things in it are
@@ -708,6 +727,9 @@ causal remains open.
 **Scope.** d=10 only. At d=5 the distortion gap is −0.0012 and crosses zero, so no
 prediction is made there, and no trend in dimensionality is claimed — the three-point
 pattern is not monotone.
+
+**Result (2026-08-05).** See the Phase-5b record above for the numbers and the
+consistency verdict; read only after the results commit, per the precondition above.
 
 ## Standing rules
 
