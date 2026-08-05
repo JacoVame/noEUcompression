@@ -167,6 +167,57 @@ published table describes.
 F3: `--seed` defaults to 20260716, aggregates are tagged `seedset<base>x<k>`
 (exactly `base .. base+k-1`, seed list written into the JSON), every artifact
 lands in `--out`, and the command above regenerates every number reported.
+
+-------------------------------------------------------------------------------
+PHASE 5b (addendum) -- the dimensional sweep, `--dims`, additive
+-------------------------------------------------------------------------------
+    python compress.py --dataset wordnet-mammals --dims 5 10 --seeds 5 --out out/
+
+`--dims` is a second entry point (`main_multi_dim`) alongside the untouched
+`--dim` path above; nothing in THE CODE, the percentile grid, the lemma->synset
+mapping, or `gold_hops_token_weighted` changes for it -- every function from
+`build_mapping` to `accounting` is reused unmodified, at each requested
+dimension in turn (a per-dimension `argparse.Namespace` copy supplies `.dim` to
+the same `coordinates`/`measure`/`summarise`/`write_outputs`/`report` calls the
+`--dim` path already makes). Three rules this mode enforces mechanically:
+
+  * No retraining a Phase-4 checkpoint into existence. Before touching the
+    corpus, `_missing_checkpoints` requires every
+    `ablation_run_<geometry>_<dataset>_d<dim>_seed<seed>.json` the requested
+    dims and seeds need; any gap stops the run and names the missing file
+    rather than falling back to a fresh hyperparameter search. Coordinates are
+    still *re-derived* per (geometry, dim, seed) -- exactly what the `--dim`
+    path already does via `coordinates`/`gate` -- because the checkpoint is a
+    metrics record, not a coordinate array; re-deriving from the frozen
+    `LR_TABLE` recipe and gating the result to `ablation.GATE_TOL` is what
+    "reusing the checkpoint" means here, not a new search.
+  * The lemma->synset mapping is computed once and shared across every
+    requested dimension (it never reads `args.dim`), which makes "the same
+    259 types / 166 synsets at every d" true by construction; on top of that,
+    `_check_mapping_invariant` asserts the mapped-type/node counts against the
+    published Phase-5 values and stops if they drift, since a silent rebuild
+    of the mapping is exactly the defect this packet calls out.
+  * The js-cooccurrence side is *not* re-run per dimension. `_load_js_reference`
+    loads the five existing `compress_run_js-cooccurrence_..._d2_seed*.json`
+    records from Phase 5 and folds them into each dimension's aggregate
+    unchanged (`aggregate["js_cooccurrence_source_dim"] = 2`), because it is an
+    unlearned heuristic the packet designates a constant reference row rather
+    than a per-dimension measurement.
+
+What's new in the output: `phase4_reference` re-derives the Phase-4
+euclidean/lorentz MAP and avg-distortion ranking directly from the same
+checkpoint files (never transcribed), `rank_by_gold_hops` ranks the sides by
+`gold_hops_token_weighted` at each operating point, and `_ranking_verdict`
+states, per dimension, whether the gold-hops order matches the MAP ranking,
+the distortion ranking, both, or neither -- "neither" is reported as plainly as
+a match. `ratio_fidelity_correlation` repeats the d=2 anti-correlation
+computation (ratio vs. gold hops, ratio vs. largest-cluster token share, over
+`len(SIDES) * len(percentile_grid)` cells) at each new dimension, so it can be
+compared to the d=2 figures rather than asserted against them. All of it lands
+in one additional pair of artifacts, `compress_dims_<dataset>_dims<d1>-<d2>_
+<tag>.{json,md}`, alongside the per-dimension `compress_<dataset>_d<dim>_<tag>`
+artifacts the `--dim` path already writes -- nothing is overwritten in place of
+what Phase 5 produced at d=2.
 """
 import argparse
 import hashlib
@@ -234,6 +285,8 @@ JS_EPS = 1e-8            # compressionTest.js:75
 def main(argv=None):
     args = _parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
+    if args.dims:
+        return main_multi_dim(args)
     if args.dataset != "wordnet-mammals":
         raise SystemExit("the lemma -> synset mapping of Premise 2 is defined for "
                          "wordnet-mammals only")
@@ -279,6 +332,345 @@ def main(argv=None):
     paths = write_outputs(aggregate, args, tag)
     report(aggregate, paths, args, seeds, tag)
     return 0
+
+
+# --------------------------------------------------------------------------- #
+# Phase 5b (addendum) — the dimensional sweep, additive
+# --------------------------------------------------------------------------- #
+
+JS_REFERENCE_DIM = 2  # the js-cooccurrence side is carried forward from here
+EXPECTED_N_TYPES_MAPPED = 259  # published Phase-5 mapping stats; see
+EXPECTED_N_NODES = 166         # _check_mapping_invariant
+
+
+def main_multi_dim(args):
+    """Entry point for `--dims`: the existing pipeline, at several dimensions,
+    with the three rules from the PHASE 5b docstring section enforced up front.
+    """
+    if args.dataset != "wordnet-mammals":
+        raise SystemExit("the lemma -> synset mapping of Premise 2 is defined for "
+                         "wordnet-mammals only")
+    dims = sorted(set(args.dims))
+    seeds = ablation.seed_set(args.seed, args.seeds)
+    tag = ablation.seed_tag(args.seed, args.seeds)
+
+    missing = _missing_checkpoints(dims, args.dataset, args.out, seeds)
+    if missing:
+        raise SystemExit(
+            "missing Phase-3/Phase-4 embedding checkpoint(s); --dims does not "
+            "substitute a fresh training run for a missing cell:\n  "
+            + "\n  ".join(missing))
+    js_runs = [] if args.no_js else _load_js_reference(args, seeds)
+
+    hierarchy = datasets.load(args.dataset, seed=args.seed)
+    print(f"corpus: {CORPUS_TITLE}")
+    text, corpus_sha, body_path = load_corpus(args)
+    mapping = build_mapping(hierarchy, text, args)
+    _write_json(os.path.join(args.out,
+                             f"compress_mapping_pg{CORPUS_ID}_{args.dataset}.json"),
+                {k: v for k, v in mapping.items() if k not in ("tokens", "freq")})
+    report_mapping(mapping)
+    _check_mapping_invariant(mapping)
+    if mapping["n_nodes"] < 2:
+        raise SystemExit("fewer than two nodes in the intersection: nothing to cluster")
+
+    per_dim = {}
+    for dim in dims:
+        print(f"\n=== d={dim} ===", flush=True)
+        dim_args = argparse.Namespace(**vars(args))
+        dim_args.dim = dim
+
+        runs = []
+        for geometry in GEOMETRIES:
+            for seed in seeds:
+                coords = coordinates(geometry, dim_args, hierarchy, seed)
+                dist = subset_distances(geometry, coords, mapping["node_index"])
+                runs.append(measure(geometry, dist, mapping, hierarchy, dim_args, seed))
+        for record in runs:
+            _write_json(os.path.join(
+                dim_args.out, f"compress_run_{record['side']}_{dim_args.dataset}"
+                              f"_d{dim}_seed{record['seed']}.json"), record)
+
+        aggregate = summarise(runs + js_runs, mapping, dim_args, seeds, tag, corpus_sha)
+        aggregate["js_cooccurrence_constant_by_construction"] = True
+        aggregate["js_cooccurrence_source_dim"] = JS_REFERENCE_DIM
+        paths = write_outputs(aggregate, dim_args, tag)
+        report(aggregate, paths, dim_args, seeds, tag)
+
+        ref = phase4_reference(dim, args.dataset, args.out, seeds)
+        rankings = {_pkey(p): rank_by_gold_hops(aggregate, p)
+                    for p in aggregate["operating_points"]}
+        matches = {pkey: _ranking_verdict(ranking, ref)
+                   for pkey, ranking in rankings.items()}
+        per_dim[dim] = {
+            "aggregate_paths": {k: v for k, v in paths.items()},
+            "gold_hops_ranking": {
+                pkey: [{"side": s, "gold_hops_token_weighted":
+                        {"mean": m, "sigma": sg}} for s, m, sg in ranking]
+                for pkey, ranking in rankings.items()},
+            "phase4_reference": ref,
+            "ranking_match": matches,
+            "ratio_fidelity_correlation": ratio_fidelity_correlation(aggregate),
+        }
+
+    summary_paths = write_dims_summary(per_dim, args, dims, seeds, tag)
+    report_dims(per_dim, args, dims, seeds, tag, summary_paths)
+    return 0
+
+
+def _missing_checkpoints(dims, dataset, out_dir, seeds):
+    """Every (geometry, dim, seed) cell's Phase-4 checkpoint the sweep needs."""
+    missing = []
+    for dim in dims:
+        for geometry in GEOMETRIES:
+            for seed in seeds:
+                path = os.path.join(
+                    out_dir, f"ablation_run_{geometry}_{dataset}_d{dim}_seed{seed}.json")
+                if not os.path.exists(path):
+                    missing.append(path)
+    return missing
+
+
+def _load_js_reference(args, seeds):
+    """The five Phase-5 js-cooccurrence per-seed records at d=2, unchanged.
+
+    Carried forward rather than re-run: the packet designates this side a
+    constant reference row, not a per-dimension measurement (see the module
+    docstring). Fails loudly rather than silently re-running it if a record
+    (or a percentile this run's --sweep needs) is missing.
+    """
+    runs, missing = [], []
+    for seed in seeds:
+        path = os.path.join(args.out, f"compress_run_js-cooccurrence_"
+                                      f"{args.dataset}_d{JS_REFERENCE_DIM}_seed{seed}.json")
+        if not os.path.exists(path):
+            missing.append(path)
+            continue
+        with open(path, encoding="utf-8") as fh:
+            record = json.load(fh)
+        gaps = [p for p in args.sweep if _pkey(p) not in record["grid"]]
+        if gaps:
+            raise SystemExit(
+                f"{path} has no grid entry for percentile(s) {gaps}; the "
+                f"js-cooccurrence side is carried forward from d={JS_REFERENCE_DIM} "
+                f"unchanged and cannot be re-measured at a different --sweep than "
+                f"the one that produced it")
+        runs.append(record)
+    if missing:
+        raise SystemExit(
+            f"missing Phase-5 js-cooccurrence reference record(s) at "
+            f"d={JS_REFERENCE_DIM} (--dims carries this side forward unchanged "
+            f"rather than re-measuring it):\n  " + "\n  ".join(missing))
+    return runs
+
+
+def _check_mapping_invariant(mapping):
+    """The lemma->synset mapping must be the same at every dimension.
+
+    It is, by construction, here: `build_mapping` never reads `args.dim` and
+    is called once and shared across the sweep. This is the second, independent
+    check the packet asks for -- that today's mapping still matches the
+    published Phase-5 figures, so a corpus/WordNet/logic drift is reported
+    rather than silently producing a different-but-internally-consistent count.
+    """
+    got = (mapping["n_types_mapped"], mapping["n_nodes"])
+    expected = (EXPECTED_N_TYPES_MAPPED, EXPECTED_N_NODES)
+    if got != expected:
+        raise SystemExit(
+            f"mapping invariant broken: got {got[0]} mapped types / {got[1]} "
+            f"nodes, expected {expected[0]}/{expected[1]} (the Phase-5 values). "
+            f"The mapping is dimension-independent and must be identical at "
+            f"every d; this mismatch means it is being rebuilt, which is a "
+            f"defect -- stop and report it rather than continuing.")
+
+
+def phase4_reference(dim, dataset, out_dir, seeds):
+    """Phase-4 MAP and avg-distortion ranking, re-derived from the checkpoint
+    files themselves (never transcribed from the README table)."""
+    means = {}
+    for geometry in GEOMETRIES:
+        maps, dists = [], []
+        for seed in seeds:
+            path = os.path.join(
+                out_dir, f"ablation_run_{geometry}_{dataset}_d{dim}_seed{seed}.json")
+            with open(path, encoding="utf-8") as fh:
+                record = json.load(fh)
+            maps.append(record["map"])
+            dists.append(record["avg_distortion"])
+        means[geometry] = {"map": _mean_sigma(maps),
+                           "avg_distortion": _mean_sigma(dists)}
+    return {
+        "means": means,
+        "map_ranking": sorted(GEOMETRIES, key=lambda g: -means[g]["map"]["mean"]),
+        "distortion_ranking": sorted(
+            GEOMETRIES, key=lambda g: means[g]["avg_distortion"]["mean"]),
+    }
+
+
+def rank_by_gold_hops(aggregate, percentile):
+    """Sides ordered by `gold_hops_token_weighted`, ascending (fewer hops =
+    more semantically faithful clustering), at one operating point."""
+    key = _pkey(percentile)
+    entries = []
+    for side in SIDES:
+        entry = aggregate["sides"].get(side)
+        if entry is None:
+            continue
+        cell = entry["grid"][key]["gold_hops_token_weighted"]
+        entries.append((side, cell["mean"], cell["sigma"]))
+    entries.sort(key=lambda e: e[1])
+    return entries
+
+
+def _ranking_verdict(gold_ranking, ref):
+    """Does the euclidean-vs-lorentz slice of the gold-hops order match the
+    Phase-4 MAP ranking, the distortion ranking, both, or neither."""
+    order = [side for side, _, _ in gold_ranking if side in GEOMETRIES]
+    matches_map = order == ref["map_ranking"]
+    matches_distortion = order == ref["distortion_ranking"]
+    if matches_map and matches_distortion:
+        verdict = "both"
+    elif matches_map:
+        verdict = "map_only"
+    elif matches_distortion:
+        verdict = "distortion_only"
+    else:
+        verdict = "neither"
+    return {
+        "euclidean_vs_lorentz_gold_order": order,
+        "matches_map_ranking": matches_map,
+        "matches_distortion_ranking": matches_distortion,
+        "verdict": verdict,
+    }
+
+
+def _pearson(xs, ys):
+    x, y = np.asarray(xs, dtype=np.float64), np.asarray(ys, dtype=np.float64)
+    if x.size < 2 or np.std(x) == 0.0 or np.std(y) == 0.0:
+        return None
+    return float(np.corrcoef(x, y)[0, 1])
+
+
+def ratio_fidelity_correlation(aggregate):
+    """The d=2 ratio-vs-fidelity anti-correlation, repeated at this dimension:
+    Pearson r between `ratio` and (`gold_hops_token_weighted`,
+    `largest_cluster_token_share`) over every (side, percentile) cell."""
+    ratios, hops, shares = [], [], []
+    for entry in aggregate["sides"].values():
+        for cell in entry["grid"].values():
+            ratios.append(cell["ratio"]["mean"])
+            hops.append(cell["gold_hops_token_weighted"]["mean"])
+            shares.append(cell["largest_cluster_token_share"]["mean"])
+    return {
+        "n_cells": len(ratios),
+        "gold_hops": _pearson(ratios, hops),
+        "largest_cluster_token_share": _pearson(ratios, shares),
+    }
+
+
+def write_dims_summary(per_dim, args, dims, seeds, tag):
+    base = (f"compress_dims_{args.dataset}_dims"
+            f"{'-'.join(str(d) for d in dims)}_{tag}")
+    payload = {"dataset": args.dataset, "dims": dims, "seeds": seeds,
+              "seed_tag": tag, "js_cooccurrence_source_dim": JS_REFERENCE_DIM,
+              "per_dimension": {str(d): per_dim[d] for d in dims}}
+    paths = {"json": os.path.join(args.out, base + ".json"),
+             "md": os.path.join(args.out, base + ".md")}
+    _write_json(paths["json"], payload)
+    with open(paths["md"], "w", encoding="utf-8") as fh:
+        fh.write(_dims_markdown(payload))
+    return paths
+
+
+def _dims_markdown(payload):
+    out = [
+        "# Phase 5b — the dimensional sweep of the compression pipeline\n",
+        f"`{payload['dataset']}`, d in {payload['dims']}, seeds {payload['seeds']} "
+        f"(`{payload['seed_tag']}`), mean ± σ over the seed set. The "
+        f"js-cooccurrence side is carried forward unchanged from "
+        f"d={payload['js_cooccurrence_source_dim']} (dimension-independent by "
+        f"construction; not re-measured here).\n",
+    ]
+    for dim in payload["dims"]:
+        entry = payload["per_dimension"][str(dim)]
+        out.append(f"\n## d = {dim}\n")
+        for pkey, ranking in entry["gold_hops_ranking"].items():
+            out.append(f"\n### auto-threshold percentile p = {pkey}\n")
+            out.append("| rank | side | gold hops (token-weighted) |")
+            out.append("|---|---|---|")
+            for i, row in enumerate(ranking, 1):
+                stat = row["gold_hops_token_weighted"]
+                out.append(f"| {i} | {row['side']} | "
+                          f"{stat['mean']:.3f} ± {stat['sigma']:.3f} |")
+            verdict = entry["ranking_match"][pkey]
+            order = " > ".join(verdict["euclidean_vs_lorentz_gold_order"])
+            out.append(f"\nEuclidean-vs-Lorentz gold-hops order (fewer hops "
+                      f"first): {order}. Matches Phase-4 MAP ranking: "
+                      f"{verdict['matches_map_ranking']}. Matches Phase-4 "
+                      f"distortion ranking: {verdict['matches_distortion_ranking']}. "
+                      f"Verdict: **{verdict['verdict']}**.\n")
+        ref = entry["phase4_reference"]
+        m = ref["means"]
+        out.append(
+            f"\nPhase-4 reference at d={dim} (re-derived from the checkpoints): "
+            f"MAP euclidean {m['euclidean']['map']['mean']:.4f} ± "
+            f"{m['euclidean']['map']['sigma']:.4f} vs lorentz "
+            f"{m['lorentz']['map']['mean']:.4f} ± {m['lorentz']['map']['sigma']:.4f} "
+            f"(ranking {' > '.join(ref['map_ranking'])}, higher first); avg "
+            f"distortion euclidean {m['euclidean']['avg_distortion']['mean']:.4f} "
+            f"± {m['euclidean']['avg_distortion']['sigma']:.4f} vs lorentz "
+            f"{m['lorentz']['avg_distortion']['mean']:.4f} ± "
+            f"{m['lorentz']['avg_distortion']['sigma']:.4f} (ranking "
+            f"{' < '.join(ref['distortion_ranking'])}, lower first).\n")
+        corr = entry["ratio_fidelity_correlation"]
+        out.append(
+            f"\nRatio-vs-fidelity correlation at d={dim}, over {corr['n_cells']} "
+            f"(side, percentile) cells: r(ratio, gold hops) = "
+            f"{corr['gold_hops']:.3f}; r(ratio, largest-cluster token share) = "
+            f"{corr['largest_cluster_token_share']:.3f}. Phase-5 reference "
+            f"(d=2, 36 cells): -0.88 / -0.92.\n")
+        out.append(f"\nFull aggregate: `{entry['aggregate_paths']['json']}`, "
+                  f"`{entry['aggregate_paths']['md']}`.\n")
+    return "\n".join(out)
+
+
+def report_dims(per_dim, args, dims, seeds, tag, summary_paths):
+    """Console output is ASCII: this stdout is cp1252 and 'σ' raises there."""
+    print()
+    print(f"=== Phase 5b - {args.dataset} dims {dims}, seeds {seeds} ({tag}) ===")
+    for dim in dims:
+        entry = per_dim[dim]
+        print(f"\n-- d={dim}")
+        for pkey, ranking in entry["gold_hops_ranking"].items():
+            row_text = "  >  ".join(
+                f"{row['side']} {row['gold_hops_token_weighted']['mean']:.3f}"
+                f"+/-{row['gold_hops_token_weighted']['sigma']:.3f}"
+                for row in ranking)
+            print(f"  p={pkey}: {row_text}")
+            verdict = entry["ranking_match"][pkey]
+            order = " > ".join(verdict["euclidean_vs_lorentz_gold_order"])
+            print(f"    euclidean-vs-lorentz gold order: {order}   "
+                  f"matches MAP: {verdict['matches_map_ranking']}   "
+                  f"matches distortion: {verdict['matches_distortion_ranking']}   "
+                  f"verdict: {verdict['verdict']}")
+        m = entry["phase4_reference"]["means"]
+        print(f"  Phase-4 ref: MAP eucl {m['euclidean']['map']['mean']:.4f} vs "
+              f"lorentz {m['lorentz']['map']['mean']:.4f}   distortion eucl "
+              f"{m['euclidean']['avg_distortion']['mean']:.4f} vs lorentz "
+              f"{m['lorentz']['avg_distortion']['mean']:.4f}")
+        corr = entry["ratio_fidelity_correlation"]
+        print(f"  ratio-vs-fidelity corr (n={corr['n_cells']}): gold_hops "
+              f"{corr['gold_hops']:.3f}   largest_cluster_share "
+              f"{corr['largest_cluster_token_share']:.3f}   "
+              f"(Phase-5 d=2, n=36: -0.88 / -0.92)")
+    print()
+    for name, path in summary_paths.items():
+        print(f"  {name}: {path}")
+    print()
+    print("regenerate:")
+    print(f"  python compress.py --dataset {args.dataset} --dims "
+          f"{' '.join(str(d) for d in dims)} --seeds {args.seeds} "
+          f"--out {args.out}")
 
 
 # --------------------------------------------------------------------------- #
@@ -1105,6 +1497,12 @@ def _parse_args(argv):
                     "run on the learned Euclidean and Lorentz embeddings.")
     p.add_argument("--dataset", default="wordnet-mammals", choices=datasets.DATASETS)
     p.add_argument("--dim", type=int, default=2)
+    p.add_argument("--dims", type=int, nargs="+", default=None,
+                   help="Phase 5b (addendum): run the pipeline at several "
+                        "dimensions in one command instead of --dim's one. "
+                        "Additive -- reuses every function --dim uses "
+                        "unmodified; see the PHASE 5b docstring section for "
+                        "what it does and does not recompute.")
     p.add_argument("--seeds", type=int, default=5,
                    help="how many seeds: base, base+1, ..., base+seeds-1")
     p.add_argument("--seed", type=int, default=DEFAULT_SEED,
