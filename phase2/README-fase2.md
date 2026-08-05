@@ -585,6 +585,46 @@ What the next packet inherits, and what it must not re-decide:
   choice it was told to state can only be settled at d≥5.*
 - **`ablation.py` is partially sealed** — see the note below.
 
+### Phase 5b pre-registration (2026-08-05)
+
+*Committed before the Phase-5b session opens. The session brief deliberately does not
+reproduce this paragraph: an agent that knows the expected outcome can steer toward it,
+and Phase 5 already measured what happens when a metric is visible to the thing being
+optimised. `git log` must show this commit before the results commit.*
+
+At d=10 the two Phase-4 metrics disagree: the Euclidean side reconstructs perfectly
+(MAP 1.0000 vs 0.9853) while distorting the global metric more (0.2927 vs 0.2606).
+d=10 is therefore the discriminating dimension, and the question is which ranking the
+pipeline's semantic fidelity follows.
+
+**Prediction: fidelity will NOT follow distortion.** At K-matched operating points at
+d=10, the Euclidean side will produce merges spanning fewer token-weighted gold hops
+than the Lorentz side.
+
+**Reasoning.** The clustering step cuts at a percentile of the pairwise-distance
+distribution, so what governs merges is the *shape* of that distribution rather than
+its faithfulness at optimal global scale. On shape, the Euclidean side is closer to the
+graph at d=10 (embedded spread 0.1835 against the graph's 0.2927; Lorentz 0.1160). The
+only downstream evidence that exists points the same way: at d=2 the Lorentz side won
+both geometric metrics and produced worse merges (3.16 vs 1.74 gold hops) — a
+comparison confounded by unmatched K (72.2 vs 85.2), which is why Phase 5b re-runs d=2
+under matched K.
+
+**Falsification.** If at d=10, at matched K, the Lorentz side's token-weighted gold
+hops is lower than the Euclidean side's, this prediction is wrong: distortion is the
+metric that governs downstream quality, and §4 of carta 02 gains a practical reading.
+Either outcome gets published.
+
+**Known limit of the design.** Across d={2,5,10} the MAP ranking and the embedded-spread
+ranking are identical (lorentz, euclidean, euclidean), so this experiment cannot separate
+them; it can only separate both jointly from the distortion ranking (lorentz, euclidean,
+lorentz), which differs at d=10 alone. If the prediction holds, which of the two is
+causal remains open.
+
+**Scope.** d=10 only. At d=5 the distortion gap is −0.0012 and crosses zero, so no
+prediction is made there, and no trend in dimensionality is claimed — the three-point
+pattern is not monotone.
+
 ## Standing rules
 
 - After Phase 1 is merged, the harness (`eval.py` + everything under `harness/`) is **frozen**: builder sessions must not modify it. Changes require explicit human sign-off recorded as a dated note in this file.

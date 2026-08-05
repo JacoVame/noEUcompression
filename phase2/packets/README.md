@@ -7,15 +7,40 @@ mid-run.
 
 | Packet | Phase | Status |
 |---|---|---|
-| [phase4b-epoch-sensitivity.md](phase4b-epoch-sensitivity.md) | 4b (addendum) | ready — run this before Phase 6 |
-| [phase5-compression-reconnect.md](phase5-compression-reconnect.md) | 5 (optional) | ready, but blocked on two premises stated inside |
-| [phase6-article-section4.md](phase6-article-section4.md) | 6 | ready — depends on 4b |
+| [phase4b-epoch-sensitivity.md](phase4b-epoch-sensitivity.md) | 4b (addendum) | done 2026-08-05 — budget bracketed, 6000 on a plateau |
+| [phase5-compression-reconnect.md](phase5-compression-reconnect.md) | 5 (optional) | done 2026-08-04 |
+| [phase5b-dimensional-sweep.md](phase5b-dimensional-sweep.md) | 5b (addendum) | ready — **has a PM precondition, read the top of the file first** |
+| [phase5c-lossy-decoder.md](phase5c-lossy-decoder.md) | 5c (addendum) | ready |
+| [phase5d-reframe-and-findings.md](phase5d-reframe-and-findings.md) | 5d (addendum) | ready — depends on 5b and 5c |
+| [phase6-article-section4.md](phase6-article-section4.md) | 6 | superseded — carta 02 published 2026-08-05; see the closure plan below |
 
-Conventions every packet inherits, so none of them restates it:
+Run order for the remaining work: **5b → 5c → 5d**, then the closure below.
+
+## Closure plan (why this project ends)
+
+Phase 6 as originally written — "article §4" — is spent: carta 02 shipped on
+2026-08-05. The slot is reused for the public closure, and a Phase 7 exists for
+the one thing research repositories never do, which is to stop on purpose.
+
+- **Phase 6 (redefined)** — the public cantiere note on Phase 5 (figure produced
+  by 5d), plus a top-level README that routes a visitor in three lines:
+  `docs/en/story.md` for carta 01, `phase2/README-fase2.md` for carta 02,
+  `FINDINGS.md` for Phase 5. Today a visitor arriving from the published article
+  lands on the 2025 JS prototype.
+- **Phase 7** — formal sunset: tag `v1.0` and write `NOT-DONE.md` listing what
+  would be a *different project*: Route B over co-occurrence, word-sense
+  disambiguation, a learned hyperbolic SOM, a second taxonomy to confirm the
+  shape of the boundary. Without a termination criterion a research project is
+  not closed, it is abandoned — and abandonment costs a narrative that closure
+  does not.
+
+## Conventions every packet inherits, so none of them restates it
 
 - `eval.py` + `harness/` frozen since Phase 1; `embeddings/euclidean.py` sealed
   2026-08-03; `embeddings/lorentz.py` delivered in Phase 3; `ablation.py`
-  partially sealed 2026-08-04 (see `../README-fase2.md`).
+  partially sealed 2026-08-04 (see `../README-fase2.md`). Additive change to a
+  sealed module is admissible only if the regression gate still passes to the
+  digit on all four cells.
 - The JS companion in the repository root is out of scope for phase-2 sessions.
 - F3: `--seed` (default 20260716), every artifact into `out/` with the seed
   identified in the filename, every stated number regenerable by one printed
@@ -23,3 +48,5 @@ Conventions every packet inherits, so none of them restates it:
 - Interpreter from `.venv-path`, `PYTHONSAFEPATH=1`, out-of-tree venv by design.
 - stdout is cp1252: printing `σ` raises `UnicodeEncodeError`. Unicode goes in
   UTF-8 files and matplotlib titles only.
+- `CONSTRAINTS.md` non-goals are binding on prose as well as on code: in
+  particular, no comparison against `gzip` or any entropy coder, in any document.
