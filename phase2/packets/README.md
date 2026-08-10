@@ -9,8 +9,8 @@ mid-run.
 |---|---|---|
 | [phase4b-epoch-sensitivity.md](phase4b-epoch-sensitivity.md) | 4b (addendum) | done 2026-08-05 — budget bracketed, 6000 on a plateau |
 | [phase5-compression-reconnect.md](phase5-compression-reconnect.md) | 5 (optional) | done 2026-08-04 |
-| [phase5b-dimensional-sweep.md](phase5b-dimensional-sweep.md) | 5b (addendum) | ready — **has a PM precondition, read the top of the file first** |
-| [phase5c-lossy-decoder.md](phase5c-lossy-decoder.md) | 5c (addendum) | ready |
+| [phase5b-dimensional-sweep.md](phase5b-dimensional-sweep.md) | 5b (addendum) | done 2026-08-05 — see the Phase-5b record in `../README-fase2.md` |
+| [phase5c-lossy-decoder.md](phase5c-lossy-decoder.md) | 5c (addendum) | done 2026-08-10 — all 180 cells verified, no discrepancy |
 | [phase5d-reframe-and-findings.md](phase5d-reframe-and-findings.md) | 5d (addendum) | ready — depends on 5b and 5c |
 | [phase6-article-section4.md](phase6-article-section4.md) | 6 | superseded — carta 02 published 2026-08-05; see the closure plan below |
 
