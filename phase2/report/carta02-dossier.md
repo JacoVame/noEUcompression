@@ -18,6 +18,10 @@ Data: 2026-08-04 · repository `noEUcompression`, branch `phase2` (PR #7) ·
 seed set `20260716..20260720`. **Aggiornato il 2026-08-04 con la Fase 4b** (§4b):
 la scansione del budget di epoche è stata eseguita e il suo esito cambia una delle
 frasi che carta 02 può scrivere — si legga §4b prima di §4.
+**Aggiornato il 2026-08-11 con le Fasi 5, 5b, 5c e 5d** (§4c): la riconnessione
+alla pipeline di compressione — che §8 dichiarava bloccata su una premessa — è
+stata eseguita e misurata. Il suo esito non è un rapporto di compressione: è un
+risultato *sulla metrica*, e riscrive il primo punto di §7 e il secondo di §8.
 
 ---
 
@@ -244,6 +248,195 @@ non di chi implementa:
 python ablation.py --epoch-scan 6000 7500 9000 --dataset synthetic-tree --dims 5 10 --out out/
 ```
 
+## 4c. La pipeline riconnessa, e la metrica che premia il degrado (Fasi 5-5d, 2026-08-05 → 2026-08-11)
+
+§8 dichiarava la Fase 5 «opzionale, bloccata su una premessa reale»: serviva una
+mappatura lemma→synset e un corpus il cui vocabolario intersecasse davvero il
+sottoalbero dei mammiferi. **La premessa è stata risolta e, soprattutto, misurata**,
+e la fase è stata eseguita in quattro tempi: 5 (d=2), 5b (d=5 e d=10), 5c (il
+decodificatore e il suo cancello di andata-e-ritorno), 5d (il nome corretto e il
+referto). L'esito non è il rapporto di compressione che §8 non poteva promettere.
+È un risultato **sulla metrica stessa**, e per carta 02 vale più del rapporto.
+
+Referto completo, in inglese, con ogni cifra legata al suo artefatto:
+[`../FINDINGS.md`](../FINDINGS.md).
+
+**Prima di qualunque numero: la copertura.** Ogni cifra di questa sezione descrive
+**l'1,55% del corpus**, e nient'altro.
+
+| quantità | valore | artefatto |
+|---|---|---|
+| token codificati (N) | 4616 su 297_697 (**1,55%**) | `out/compress_mapping_pg2300_wordnet-mammals.json` |
+| token scartati perché non mappati | 293_081 (98,45%) | idem |
+| tipi mappati (V) | 259 su 13_565 | idem |
+| synset raggiunti = nodi raggruppati | 166 su 1170 (14,2%) | idem |
+| entropia dei tipi sul flusso mappato | 5,696 bit/token | idem |
+
+Corpus: Darwin, *The Descent of Man* (Project Gutenberg #2300), sha256 fissato e
+verificato a ogni esecuzione. Un rapporto calcolato sull'1,55% di un testo è
+un'affermazione su quell'1,55%.
+
+**Il risultato in una frase.** *Il rapporto che questa pipeline riporta è una
+metrica che premia il degrado*: su tutta la griglia misurata, migliore è il
+rapporto, più lontano viaggiano le fusioni nella gerarchia d'oro — e il rapporto
+migliore fra i tre lati appartiene all'embedding **più degenere** dello studio.
+Nessuno stava barando la metrica: la metrica era barabile.
+
+**(a) Il rapporto anticorrela con la fedeltà.** Pearson *r* su ogni cella (lato,
+percentile) della griglia — 3 lati × 12 percentili = **36 celle per dimensione**,
+ciascuna media sui 5 semi:
+
+| d | r(rapporto, salti d'oro) | r(rapporto, quota di token del cluster più grande) | celle |
+|---|---|---|---|
+| 2 | **−0,841** | **−0,949** | 36 |
+| 5 | **−0,992** | **−0,712** | 36 |
+| 10 | **−0,984** | **−0,654** | 36 |
+
+Artefatti: `out/compress_wordnet-mammals_d{2,5,10}_seedset20260716x5.json`,
+ricalcolabili con `compress.ratio_fidelity_correlation(<aggregato>)`. Il
+`ratio` scende quando il codice si accorcia, quindi un *r negativo* contro i salti
+d'oro dice: **le celle col rapporto migliore sono quelle le cui fusioni attraversano
+più salti nella gerarchia congelata**. Lo stesso segno vale contro la quota di
+token del cluster più grande — i rapporti migliori sono quelli che rovesciano più
+corpus in un solo secchio.
+
+**Le dimensioni più alte non indeboliscono il risultato: lo sdoppiano.**
+L'anticorrelazione sui salti d'oro *rafforza* a d=5 (−0,992) e d=10 (−0,984);
+quella sulla quota del cluster più grande *si attenua* (−0,712, −0,654). Il
+risultato-titolo è il primo, ed è quello che sopravvive alla scansione dimensionale.
+
+*Cautela definizionale, che muove le cifre e non la conclusione:* il verbale della
+Fase 5 e il riassunto della 5b citano per d=2 la coppia **−0,88 / −0,92**, calcolata
+sul `ratio (no ceil)` a bit frazionari, mentre le cifre di d=5 e d=10 usano il
+`ratio` intero a larghezza fissa. Ricalcolata alla pari sul rapporto intero, d=2
+legge **−0,841 / −0,949**. Stesso segno, stesso ordine di grandezza, stessa
+conclusione: si spostano due decimali. La tabella sopra è il confronto alla pari.
+
+**Le tre celle che rendono concreta l'astrazione** (d=2):
+
+| cella | K | rapporto | salti d'oro | cluster più grande | che cos'è |
+|---|---|---|---|---|---|
+| lorentz, p=0,35 | 6,40 ± 2,65 | **0,3286 ± 0,1150** | 7,49 ± 0,12 | **0,8734** | miglior rapporto del lato appreso |
+| js-cooccurrence, p=0,01 | 19,20 ± 8,26 | **0,5633 ± 0,1150** | 7,65 ± 0,02 | 0,5129 | miglior rapporto dei tre lati |
+| euclidea, p=0,01 | 85,20 ± 1,72 | 0,8214 ± 0,0000 | **1,74 ± 0,06** | 0,3388 | fusioni più fedeli, rapporto peggiore |
+
+- **Il miglior rapporto dei tre lati appartiene all'euristica non appresa.** Nel
+  baseline js-cooccurrence l'**84,9% ± 7,9%** delle distanze fra coppie è
+  *esattamente zero* a d=2 — la sua proiezione a 16 feature casuali manda
+  all'origine ogni riga di massa piccola — quindi il suo raggruppamento è «fondi i
+  punti coincidenti», e le sue fusioni attraversano 7,65 ± 0,02 salti contro il
+  **riferimento cieco alla gerarchia, 7,654**. È l'embedding più degenere dello
+  studio e vince la metrica.
+- **Il miglior rapporto del lato iperbolico mette l'87,3% dei token in un solo
+  cluster**, con fusioni a 7,49 salti: statisticamente indistinguibile da un
+  raggruppamento che ignori la gerarchia.
+- Il riferimento 7,654 è la media dei cammini minimi su tutte le coppie dei
+  medesimi 166 synset nella gerarchia congelata, **ri-derivata** (non trascritta)
+  dal comando della figura (§10).
+
+**(b) La diagonale a costo costante — contabilità interna, non confronto.** Sotto il
+codice che questo repository dichiara (larghezza fissa, nessun codificatore
+entropico), ogni cella ha un codice di ⌈log2 K⌉ bit/token e un residuo misurato
+`H(tipo | cluster)` bit/token che un decodificatore dovrebbe comunque trasmettere.
+La loro **somma**:
+
+| d | celle | codice + residuo, min … max | prima di ogni raggruppamento |
+|---|---|---|---|
+| 2 | 36 | 7,967 … 8,885 bit/token | 9,00 bit/token, perdita zero |
+| 5 | 36 | 8,136 … 9,950 bit/token | 9,00 bit/token, perdita zero |
+| 10 | 36 | 8,135 … 10,004 bit/token | 9,00 bit/token, perdita zero |
+
+Ogni configurazione cade sulla stessa diagonale: **i bit vengono spostati dal
+codice alla perdita, quasi uno a uno, non risparmiati.** Il rapporto riporta solo
+la prima coordinata. Non serve nessun codec rivale per dirlo: è aritmetica interna
+alla contabilità che il repository già pubblica — ed è per questo che il risultato è
+enunciato in questa forma.
+
+**E in 18 celle su 108 lo spostamento è in perdita netta.** A d=5 e d=10 le nove
+celle lorentz a p ≥ 0,02 costano 9,95 / 10,00 bit/token, *più* dei 9,00 che lo
+stesso codice spende senza raggruppare nulla. Un codice più corto, un totale più
+lungo.
+
+**(c) Il pavimento di riferimento, e il confronto che si evita di proposito.** Il
+codice dichiarato spende **9 bit/token** (⌈log2 259⌉) prima del raggruppamento; la
+stessa distribuzione dei tipi mappati ha entropia **5,696 bit/token**. La
+differenza, **3,304 bit/token, è il gioco del baseline dichiarato**, identica su
+ogni lato perché N e V sono identici su ogni lato per costruzione. Conseguenza per
+la lettura di qualunque rapporto: **un rapporto misurato contro `size_before`
+misura in parte quel gioco, non la geometria.**
+
+Il non-obiettivo «nessun confronto con `gzip` o con un codificatore entropico»
+resta vincolante, e vincola anche questa sezione. Le due forme, perché la
+differenza non è pedanteria:
+
+- «la pipeline è peggiore di X» — **fuori perimetro**: viola un non-obiettivo
+  dichiarato e richiede un rivale che non è stato eseguito;
+- «il baseline dichiarato ha 3,3 bit/token di gioco, quindi il rapporto misura in
+  parte il baseline» — **dentro il perimetro**: è il risultato vero, non richiede
+  rivali, è verificabile dagli artefatti.
+
+Una lettura precedente della stessa aritmetica l'aveva enunciata nella prima forma.
+L'aritmetica era giusta, l'inquadramento no; la diagonale di (b) dice la stessa
+cosa senza rivali.
+
+**(d) La contabilità è verificata da un vero giro di andata e ritorno.** In
+**tutte le 180 celle** (3 lati × 12 percentili × 5 semi, d=2) il costo ricostruito
+da un vero encode→decode coincide con `bits_per_token_after + residual` entro
+**1,066e-14 bit/token**, contro una tolleranza dichiarata di 1e-9; il comando esce
+non-zero al primo fallimento, ed esce 0
+(`out/decode_verify_wordnet-mammals_d2_seedset20260716x5.{json,md}`).
+
+**Il tasso di corrispondenza esatta è quella perdita fatta concreta** — la quota di
+token che un decodificatore riproduce alla lettera:
+
+| cella | corrispondenza esatta | con rappresentante casuale del cluster |
+|---|---|---|
+| euclidea, p=0,01 | 0,6811 ± 0,0124 | 0,3051 |
+| lorentz, p=0,01 | 0,6250 ± 0,0264 | 0,2182 |
+| js-cooccurrence, p=0,01 | 0,5138 ± 0,0626 | 0,4820 |
+| euclidea, p=0,35 | 0,5017 ± 0,0716 | 0,1312 |
+| **lorentz, p=0,35** (il rapporto migliore) | **0,2867 ± 0,0179** | 0,0076 |
+
+La regola del rappresentante canonico (il tipo più frequente del cluster) vale
+circa un fattore 2 dove un raggruppamento vero esiste e un fattore 38 dentro un
+cluster gigante: la seconda colonna è quindi il limite di quanto della prima sia
+merito della regola di spareggio e non della geometria.
+
+**Cosa costa un buon rapporto, in una cella sola** (lato lorentz, p=0,35, seme
+20260716): **6 codici distinti** per 259 tipi, dunque un codice da **3 bit**;
+rapporto **0,3286**, il migliore fra i lati appresi; **il 73,2% dei token decodificati
+è la parola sbagliata** (corrispondenza esatta 0,2680); residuo misurato sul giro
+stesso **5,656 bit/token**. I tre bit risparmiati costano 5,7, e il totale torna
+sulla diagonale a 8,656.
+
+Il verbale della Fase 5 mostra che aspetto hanno quelle fusioni quando un
+raggruppamento vero sopravvive: a p=0,01, seme 20260716, il secondo cluster più
+grande del lato euclideo è il clade delle scimmie antropomorfe (`anthropoid, ape,
+chimpanzee, gibbon, gorilla, orang, siamang, simian`), mentre il lato di Lorentz
+fonde i canidi **con gli elefanti** (`dog, dogs, jackal, cur, canine, elephant,
+elephants`, 24 tipi) — ed è il lato di Lorentz quello col rapporto frazionario
+migliore in quel punto di lavoro (0,8133 contro 0,8448). Vincere il rapporto e
+raggruppare fedelmente sono qui due cose opposte.
+
+**Il nome corretto (Fase 5d).** Questa pipeline **non è compressione**: è
+**quantizzazione semantica** — i tipi vengono quantizzati su identificatori di
+cluster — e il piano di valutazione onesto è **tasso-distorsione**: bit per token
+contro danno semantico, entrambi misurati, nessuno dei due scambiato in silenzio.
+La parola «compress» sopravvive nei nomi dei file (`compress.py`, `out/compress_*`)
+e in ogni comando di rigenerazione perché quelle stringhe portano la riproducibilità
+F3: sono etichette storiche, non affermazioni.
+
+**I limiti, dichiarati.** Un corpus, una gerarchia, **1,55% di copertura**,
+d ∈ {2, 5, 10}, 5 semi. Il clamp dell'auto-soglia del prototipo
+(`compressionTest.js:531-535`, limiti `[1e-6, 10]`) vincola su diverse celle: dove
+vincola, è il clamp e non il percentile a decidere il raggruppamento, e a d=5/d=10
+il lato euclideo non fonde quasi nulla (K = 165,6 / 166,0 su 166 nodi, rapporto
+0,9388 = il pavimento del non-raggruppare). Quelle celle non dicono nulla sulla
+geometria. Il risultato riguarda **questa metrica su questa pipeline**: generalizza
+come **cautela** — *una metrica di qualità che migliora monotonamente mentre si
+butta informazione verrà ottimizzata buttando informazione* — non come misura di
+qualcosa fuori da questa griglia.
+
 ## 5. Il meccanismo: il crowding, misurato
 
 Carta 01 parla di *crowding* in modo qualitativo. Qui ha un numero. La grandezza è
@@ -321,17 +514,51 @@ Tre PNG, tutte a media ± σ sui 5 semi, nessuna con un seme scelto a mano. Vivo
    0.2927. A d=2 l'euclidea è troppo dispersa (0.5130), l'iperbolica troppo
    compressa (0.1353): entrambe sbagliano, in direzioni opposte.»
 
+Una quarta figura arriva dalle Fasi 5-5d (§4c) e vive in `report/` invece che in
+`out/`, perché non misura nulla: legge gli aggregati già presenti.
+
+4. `report/rate_distortion_wordnet-mammals_d2-5-10_seedset20260716x5.png`
+   — due pannelli, 108 celle (3 lati × 12 percentili × 3 dimensioni), colore =
+   lato, marcatore = dimensione.
+   *Didascalia pronta:* «Il piano tasso-distorsione della quantizzazione
+   semantica. A sinistra la lunghezza del codice contro la perdita residua, con le
+   diagonali a costo costante e i due riferimenti a perdita zero (il codice
+   dichiarato da 9 bit/token e l'entropia dei tipi, 5,696 bit/token, che ne misura
+   il gioco): ogni configurazione sposta bit dal codice alla perdita invece di
+   risparmiarli. A destra la lunghezza del codice contro i salti nella gerarchia
+   d'oro, con la retta del riferimento cieco alla gerarchia (7,654): i codici più
+   corti sono quelli le cui fusioni sono più lontane dal significato. Media sui 5
+   semi.»
+
 ## 7. Cosa carta 02 non deve affermare
 
 Questa sezione esiste perché carta 01 ne ha una ("Cosa questo articolo *non*
 afferma") e perché è il motivo per cui l'affermazione su d=2 può sopravvivere a una
 revisione.
 
-- **Non è compressione.** Non c'è alcun rapporto di compressione qui, e nessun
-  confronto con `gzip` — entrambi esplicitamente esclusi dagli obiettivi del
-  programma. Questa è una misura di geometria su una gerarchia d'oro. La
-  riconnessione alla pipeline di compressione è una fase successiva, non ancora
-  eseguita (§8).
+- **Non è compressione — e ora si sa perché, non solo che.** Le Fasi 2-4 sono una
+  misura di geometria su una gerarchia d'oro: nessun rapporto di compressione,
+  nessun confronto con `gzip`, entrambi esclusi dagli obiettivi del programma. La
+  riconnessione alla pipeline **è stata eseguita** (Fasi 5-5d, §4c) e ha reso il
+  divieto più forte invece di revocarlo: il rapporto che quella pipeline riporta
+  **anticorrela con la fedeltà semantica** (r fra −0,84 e −0,99 sui salti d'oro,
+  108 celle), la contabilità mostra che i bit **si spostano dal codice alla
+  perdita** invece di essere risparmiati, e in 18 celle su 108 il totale è
+  peggiore del non fare nulla. Quindi: carta 02 **non può citare nessun rapporto
+  come compressione**; può — e dovrebbe — citare il risultato sulla metrica.
+  Restano vietati il confronto con `gzip` o con qualunque codificatore entropico
+  (non-obiettivo dichiarato: il rivale non è mai stato eseguito) e ogni frase della
+  forma «la pipeline è peggiore di X»; la forma dentro perimetro è quella interna
+  alla contabilità (§4c(b), §4c(c)).
+- **Nessuna cifra della Fase 5 va citata senza la copertura.** Ogni numero di §4c
+  descrive **l'1,55% del corpus** (4616 token su 297_697, 259 tipi su 13_565, 166
+  synset su 1170). Un rapporto su quell'1,55% non è un rapporto sul testo.
+- **E c'è un numero che sembra un rapporto di compressione e non lo è.** Gli
+  aggregati portano una terza quantità adimensionale eredita dal prototipo, che
+  divide una grandezza di taglia-vocabolario per un conteggio di token: letta
+  ingenuamente sembra una compressione sopra il 90%. Numeratore e denominatore
+  contano cose diverse: non compare in §4c e nessuna cifra di §4c ne deriva. Se
+  entra in una bozza, è un errore.
 - **Non è testo naturale.** WordNet è una gerarchia curata da umani, non un corpus.
   La strada delle co-occorrenze (quella del prototipo JS) qui non è toccata: era
   una scelta deliberata, per isolare la domanda geometrica da quella sul segnale.
@@ -373,12 +600,18 @@ revisione.
   riferimento a un budget più grande. Quest'ultima è una ri-taratura su WordNet, che
   solo il PM può autorizzare. Se carta 02 va in revisione tecnica, §4b va allegato
   per intero: è la risposta alla prima domanda che un revisore farà.
-- **Fase 5** (opzionale, bloccata su una premessa reale): l'end-to-end con la
-  pipeline di compressione. Il blocco non è tecnico ma di sostanza — la Fase 2-4
-  immerge *synset* inglesi di WordNet, la pipeline raggruppa *parole* di un testo, e
-  serve una mappatura lemma→synset più un corpus il cui vocabolario intersechi
-  davvero il sottoalbero dei mammiferi. Finché quell'intersezione non è misurata,
-  carta 02 non può promettere rapporti di compressione.
+- **Fase 5** — **eseguita fra il 2026-08-05 e il 2026-08-11** in quattro tempi (5,
+  5b, 5c, 5d), §4c. La premessa che la bloccava era di sostanza e non tecnica — le
+  Fasi 2-4 immergono *synset* inglesi, la pipeline raggruppa *parole* di un testo,
+  e serviva una mappatura lemma→synset più un corpus la cui intersezione col
+  sottoalbero dei mammiferi fosse **misurata**. Ora lo è: 1,55% dei token. Il
+  risultato non è il rapporto di compressione che questa voce non poteva promettere
+  ed è meglio di così: è la dimostrazione che quel rapporto è una metrica che
+  premia il degrado. Resta aperto ciò che quella misura non copre: copertura
+  dell'1,55% su **un solo** corpus (un corpus con più mammiferi cambierebbe le
+  cifre, non necessariamente il segno), le celle dove il clamp del prototipo e non
+  il percentile decide il raggruppamento, e — per scelta, non per lacuna — nessun
+  codec rivale.
 
 ## 9. Frasi che i numeri autorizzano
 
@@ -400,6 +633,11 @@ questa tabella, non è ancora sostenuta.
 | Le due geometrie non vogliono lo stesso budget di calcolo | §4b: budget minimo indistinguibile dal proprio ottimo 1500 per l'euclidea a d=5 e d=10, 6000 (non racchiuso da sopra) per l'iperbolica alle stesse dimensioni |
 | Ordinare bene i vicini e preservare le distanze si allenano in modo diverso | §4b: sul lato iperbolico la MAP media sale ancora a 6000 mentre la distorsione media ha il minimo a 4500 e peggiora dopo, a d=5 e a d=10 |
 | L'onestà del programma è verificabile, non dichiarata | il limite dichiarato in Fase 4 è stato scansionato in Fase 4b, l'esito è sfavorevole a metà della conclusione ed è stato registrato come tale invece di essere sepolto |
+| Il rapporto di compressione di questa pipeline premia il degrado | §4c(a): r(rapporto, salti d'oro) = −0,841 (d=2), −0,992 (d=5), −0,984 (d=10) su 36 celle per dimensione; il rapporto migliore dei tre lati è quello dell'embedding con l'84,9% delle distanze esattamente nulle |
+| I bit non vengono risparmiati: vengono spostati | §4c(b): codice + residuo misurato sta fra 7,967 e 10,004 bit/token su tutte le 108 celle, contro i 9,00 bit/token dello stesso codice senza raggruppare nulla — e in 18 celle il totale è più alto |
+| Il costo di un buon rapporto è dicibile in una frase concreta | §4c(d): al miglior rapporto del lato appreso (0,3286) il 73,2% dei token decodificati è la parola sbagliata, verificato da 180 giri di andata-e-ritorno che chiudono entro 1,066e-14 bit/token |
+| Vincere una metrica e raggruppare fedelmente possono essere cose opposte | §4c: a p=0,01 il lato euclideo forma il clade delle scimmie antropomorfe mentre quello iperbolico fonde canidi ed elefanti — e il secondo ha il rapporto frazionario migliore (0,8133 contro 0,8448) |
+| Il nome giusto non è compressione | §4c: quantizzazione semantica valutata sul piano tasso-distorsione; i nomi di file con «compress» sono etichette storiche tenute per riproducibilità |
 
 ## 10. Riproducibilità
 
@@ -437,6 +675,31 @@ dataset. Tabella e testo:
 `out/ablation_epochscan_synthetic-tree_dims5-10_epochs1500-3000-4500-6000_seedset20260716-12345-777.md`
 e il JSON omonimo, con le 48 celle per singolo seme.
 
+Le Fasi 5-5d (§4c) si rigenerano con quattro comandi indipendenti, nell'ordine:
+
+```
+python compress.py --dataset wordnet-mammals --dim 2 --seeds 5 --out out/
+python compress.py --dataset wordnet-mammals --dims 5 10 --seeds 5 --out out/
+python decode.py --dataset wordnet-mammals --d 2 --seeds 5 --verify --out out/
+python compress.py --figure rate-distortion --out report/
+```
+
+Costi misurati sullo stesso host a 22 core, a vuoto: ~40 min il primo (dieci
+addestramenti, 246-251 s euclidei e 374-654 s iperbolici; saltati del tutto se
+`out/compress_coords_*.npz` esiste già, e ogni file caricato viene ri-passato al
+cancello), ~48 min il secondo (venti nuovi insiemi di coordinate, ciascuno
+verificato a delta massimo 0,0e+00 contro il checkpoint di Fase 4), ~2 min il terzo
+(nessun addestramento; esce non-zero se una cella fallisce), ~1 min il quarto
+(nessuna misura: legge gli aggregati e ri-deriva il solo riferimento cieco alla
+gerarchia, 7,6540). Artefatti principali:
+`out/compress_wordnet-mammals_d{2,5,10}_seedset20260716x5.{json,md}`,
+`out/compress_dims_wordnet-mammals_dims5-10_seedset20260716x5.{json,md}`,
+`out/compress_mapping_pg2300_wordnet-mammals.json`,
+`out/decode_verify_wordnet-mammals_d2_seedset20260716x5.{json,md}` e la figura in
+`report/`. Il corpus viene scaricato una volta da Project Gutenberg e il suo sha256
+è verificato a ogni esecuzione; `--corpus-file` lo esegue offline da una copia
+locale.
+
 ## 11. Una struttura possibile per carta 02
 
 Proposta, non prescrizione. Segue la logica per cui l'articolo è credibile: prima il
@@ -463,7 +726,14 @@ metro, poi la misura, poi i limiti.
    dell'errore; il paradosso rango-contro-MAP spiegato dal guscio stretto; la curva
    in profondità come conferma localizzata dell'argomento di carta 01.
 6. **Cosa non afferma** — §7 di questo dossier, praticamente per intero.
-7. **Cosa verrebbe dopo** — la Fase 5 e la sua premessa non risolta, detta come
-   lacuna e non come promessa; il budget iperbolico da racchiudere sopra 6000, che è
-   la lacuna più vicina e la più economica da chiudere. E i due comandi, perché chi
-   legge possa rifarli.
+7. **La metrica che premia il degrado** — §4c, e il capitolo che carta 02 non
+   avrebbe avuto se la Fase 5 fosse rimasta bloccata. La copertura (1,55%) prima di
+   ogni cifra, l'anticorrelazione, la diagonale a costo costante, e la cella in cui
+   tre bit risparmiati costano il 73% delle parole. Il nome corretto —
+   quantizzazione semantica, non compressione — appartiene qui. La morale è
+   trasferibile fuori dall'esperimento: una metrica di qualità che migliora mentre
+   si butta informazione verrà ottimizzata buttando informazione.
+8. **Cosa verrebbe dopo** — il budget iperbolico da racchiudere sopra 6000, che è
+   la lacuna più vicina e la più economica da chiudere; e per la Fase 5, la
+   copertura da allargare oltre l'1,55% su un corpus con più mammiferi. E i comandi,
+   perché chi legge possa rifarli.
