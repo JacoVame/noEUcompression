@@ -304,6 +304,8 @@ def main(argv=None):
     os.makedirs(args.out, exist_ok=True)
     if args.figure:
         return main_figure(args)
+    if args.matched_k:
+        return main_matched_k(args)
     if args.dims:
         return main_multi_dim(args)
     if args.dataset != "wordnet-mammals":
@@ -689,6 +691,473 @@ def report_dims(per_dim, args, dims, seeds, tag, summary_paths):
     print("regenerate:")
     print(f"  python compress.py --dataset {args.dataset} --dims "
           f"{' '.join(str(d) for d in dims)} --seeds {args.seeds} "
+          f"--out {args.out}")
+
+
+# --------------------------------------------------------------------------- #
+# Phase 5e (addendum) — the matched-K comparison, additive
+#
+# WHY THIS PATH EXISTS. Phase 5b compared the three sides at matched *percentile*,
+# and its own record says that is confounded: gold hops rises mechanically as K
+# falls, so two sides read at equal percentile but unequal K are not comparable.
+# The pre-registered prediction is a statement about K-matched operating points at
+# d=10, so under the percentile grid it was never tested. This path matches K.
+#
+# WHAT IT DOES NOT TOUCH. `accounting`, `cluster`, `gold_hops` (inside
+# `accounting`), `build_mapping` and the percentile grid are called exactly as the
+# --dim and --dims paths call them. Nothing here writes into an artifact those
+# paths produce.
+#
+# THE ONE DELIBERATE DIFFERENCE, STATED RATHER THAN HIDDEN. `auto_threshold`
+# clamps the prototype's threshold into [1e-6, 10]. Matching K requires thresholds
+# outside that window — at d=5 the Euclidean median pairwise distance alone is
+# ~159 — so this path selects thresholds directly from the distance distribution
+# and does not clamp. That is what makes the comparison possible and it is also a
+# cost: a cell whose matched threshold falls outside the clamp window is not
+# reachable by the prototype's own auto-threshold. Every cell carries that flag.
+# --------------------------------------------------------------------------- #
+
+K_LADDER = (80, 60, 40, 20)
+CLAMP_WINDOW = (1e-6, 10.0)  # compressionTest.js:531-535, for the flag only
+
+
+def main_matched_k(args):
+    """Entry point for `--matched-k`: the same pipeline, read at equal cluster
+    count instead of equal percentile."""
+    if args.dataset != "wordnet-mammals":
+        raise SystemExit("the lemma -> synset mapping of Premise 2 is defined for "
+                         "wordnet-mammals only")
+    dims = sorted(set(args.dims or [args.dim]))
+    targets = sorted(set(args.matched_k), reverse=True)
+    seeds = ablation.seed_set(args.seed, args.seeds)
+    tag = ablation.seed_tag(args.seed, args.seeds)
+
+    missing = _missing_checkpoints(dims, args.dataset, args.out, seeds)
+    if missing:
+        raise SystemExit(
+            "missing Phase-3/Phase-4 embedding checkpoint(s); --matched-k does not "
+            "substitute a fresh training run for a missing cell:\n  "
+            + "\n  ".join(missing))
+
+    hierarchy = datasets.load(args.dataset, seed=args.seed)
+    print(f"corpus: {CORPUS_TITLE}")
+    text, corpus_sha, body_path = load_corpus(args)
+    mapping = build_mapping(hierarchy, text, args)
+    report_mapping(mapping)
+    _check_mapping_invariant(mapping)
+
+    js_dist = None
+    if not args.no_js:
+        # re-derived, not read from the stored records: matching K needs the
+        # distance matrix, which the per-run artifacts do not carry. Constant by
+        # construction across dimensions, so it is built once at d=2.
+        js_dist = {}
+        for seed in seeds:
+            vectors = js_embedding(args, mapping, seed, body_path)
+            js_dist[seed] = poincare_distances(vectors, mapping)
+
+    per_dim = {}
+    for dim in dims:
+        print(f"\n=== d={dim} (matched K) ===", flush=True)
+        dim_args = argparse.Namespace(**vars(args))
+        dim_args.dim = dim
+
+        runs = []
+        for geometry in GEOMETRIES:
+            for seed in seeds:
+                coords = coordinates(geometry, dim_args, hierarchy, seed)
+                dist = subset_distances(geometry, coords, mapping["node_index"])
+                runs.append(measure_matched_k(geometry, dist, mapping, hierarchy,
+                                              dim_args, seed, targets))
+        if js_dist is not None:
+            for seed in seeds:
+                runs.append(measure_matched_k("js-cooccurrence", js_dist[seed],
+                                              mapping, hierarchy, dim_args, seed,
+                                              targets, node_set="types"))
+
+        aggregate = summarise_matched_k(runs, targets, seeds)
+        ref = phase4_reference(dim, args.dataset, args.out, seeds)
+        ref["spread_ranking"] = phase4_spread_ranking(dim, args.dataset,
+                                                      args.out, seeds)
+        per_dim[dim] = {
+            "sides": aggregate["sides"],
+            "rungs": aggregate["rungs"],
+            "phase4_reference": ref,
+            "ranking_match": {
+                str(k): _matched_k_verdict(aggregate, k, ref)
+                for k in targets
+                if aggregate["rungs"][str(k)]["admissible_learned_sides"]},
+        }
+
+    payload = {
+        "phase": "5e",
+        "dataset": args.dataset,
+        "dims": dims,
+        "k_ladder": list(targets),
+        "tolerance_rule": "abs(achieved - target) <= max(2, 0.05 * target)",
+        "clamp_window_note": (
+            "thresholds are NOT clamped on this path; a cell flagged "
+            "outside_clamp_window is unreachable by the prototype's own "
+            "auto-threshold"),
+        "seeds": list(seeds),
+        "seed_tag": tag,
+        "corpus_sha256": corpus_sha,
+        "js_cooccurrence_constant_by_construction": True,
+        "js_cooccurrence_source_dim": JS_REFERENCE_DIM,
+        "per_dimension": {str(d): per_dim[d] for d in dims},
+    }
+    paths = write_matched_k_outputs(payload, args, dims, targets, tag)
+    report_matched_k(payload, args, dims, targets, paths)
+    return 0
+
+
+def measure_matched_k(side, dist, mapping, hierarchy, args, seed, targets,
+                      node_set="nodes"):
+    """One (side, seed) cell, read at each target K instead of each percentile.
+
+    `accounting` is called once per rung, on the clustering the matched threshold
+    produces — the same function the percentile path calls, unmodified.
+    """
+    vocabulary = mapping["vocabulary"]
+    if node_set == "nodes":
+        row_of = {node: i for i, node in enumerate(mapping["node_index"])}
+        row_of_type = {w: row_of[mapping["type_to_node"][w]] for w in vocabulary}
+    else:
+        row_of_type = {w: i for i, w in enumerate(vocabulary)}
+
+    grid = {}
+    for target in targets:
+        threshold, achieved = _threshold_for_k(dist, target, row_of_type)
+        cell = accounting(cluster(dist, threshold), row_of_type, mapping, hierarchy)
+        cell["threshold"] = threshold
+        cell["target_k"] = target
+        cell["achieved_k"] = achieved
+        cell["k_error"] = abs(achieved - target)
+        cell["within_tolerance"] = cell["k_error"] <= _k_tolerance(target)
+        cell["outside_clamp_window"] = not (CLAMP_WINDOW[0] <= threshold
+                                            <= CLAMP_WINDOW[1])
+        grid[str(target)] = cell
+        print(f"    {side:<15} seed={seed} K*={target:<3} achieved={achieved:<4} "
+              f"threshold={threshold:.6f} "
+              f"hops={cell['gold_hops_token_weighted']:.3f} "
+              f"ratio={cell['ratio']:.4f}"
+              f"{'  [outside JS clamp]' if cell['outside_clamp_window'] else ''}",
+              flush=True)
+
+    pairs = dist[np.triu_indices(dist.shape[0], 1)]
+    return {"side": side, "dataset": args.dataset, "dim": args.dim, "seed": seed,
+            "node_set": node_set, "n_rows": int(dist.shape[0]),
+            "zero_pair_fraction": float((pairs <= 0.0).mean()),
+            "pair_distance_median": float(np.median(pairs)),
+            "k_grid": grid}
+
+
+def _k_tolerance(target):
+    """A rung that misses is not a rung. Stated as a number, per the packet."""
+    return max(2, 0.05 * target)
+
+
+def _threshold_for_k(dist, target_k, row_of_type):
+    """The threshold whose clustering lands closest to `target_k` clusters.
+
+    K is non-increasing in the threshold and changes only at a pairwise distance,
+    so the candidates are the distinct pair distances. Binary search finds the
+    crossing, then the two neighbours are compared exactly, because K jumps: a
+    side with coincident points (the js baseline has 84.9% of its pairs at exactly
+    zero) can skip whole ranges of K, and the achieved value must be reported
+    rather than the target.
+    """
+    values = np.unique(dist[np.triu_indices(dist.shape[0], 1)])
+    if values.size == 0:
+        return 0.0, len(set(row_of_type.values()))
+    # thresholds strictly above the largest distance merge everything; one step
+    # below the smallest merges nothing. Both ends are candidates.
+    candidates = np.concatenate(([values[0]], values, [values[-1] * (1 + 1e-9) + 1e-9]))
+
+    def k_at(index):
+        return _k_from_labels(cluster(dist, float(candidates[index])), row_of_type)
+
+    lo, hi = 0, len(candidates) - 1
+    best = None
+    seen = {}
+
+    def probe(index):
+        if index not in seen:
+            seen[index] = k_at(index)
+        return seen[index]
+
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        k = probe(mid)
+        if best is None or (abs(k - target_k), -k) < (abs(best[1] - target_k), -best[1]):
+            best = (mid, k)
+        if k == target_k:
+            break
+        if k > target_k:
+            lo = mid + 1  # more clusters than wanted: raise the threshold
+        else:
+            hi = mid - 1
+    # the step function can put the closest K on either side of the crossing
+    for index in (best[0] - 1, best[0] + 1):
+        if 0 <= index < len(candidates):
+            k = probe(index)
+            if (abs(k - target_k), -k) < (abs(best[1] - target_k), -best[1]):
+                best = (index, k)
+    return float(candidates[best[0]]), int(best[1])
+
+
+def _k_from_labels(labels, row_of_type):
+    """Cluster count as the accounting counts it: over the mapped types."""
+    return len({int(labels[row]) for row in row_of_type.values()})
+
+
+MATCHED_K_FIELDS = ("achieved_k", "threshold", "gold_hops_token_weighted",
+                    "gold_hops_max", "ratio", "residual_bits_per_token",
+                    "bits_per_token_after", "largest_cluster_token_share",
+                    "collapsed_token_fraction")
+
+
+def summarise_matched_k(runs, targets, seeds):
+    """Mean +/- sigma per (side, rung), plus each rung's admissibility.
+
+    A rung is admissible only if EVERY side reached its target K within
+    tolerance on EVERY seed. An inadmissible rung is dropped from the ranking
+    and named, because comparing sides at different K is the confound this phase
+    exists to remove.
+    """
+    sides, rungs = {}, {}
+    for side in SIDES:
+        cells = [r for r in runs if r["side"] == side]
+        if not cells:
+            continue
+        grid = {}
+        for target in targets:
+            key = str(target)
+            entries = [c["k_grid"][key] for c in cells]
+            grid[key] = {
+                field: _mean_sigma([e[field] for e in entries])
+                for field in MATCHED_K_FIELDS}
+            grid[key]["within_tolerance_all_seeds"] = all(
+                e["within_tolerance"] for e in entries)
+            grid[key]["outside_clamp_window_any_seed"] = any(
+                e["outside_clamp_window"] for e in entries)
+            grid[key]["achieved_k_per_seed"] = [e["achieved_k"] for e in entries]
+        sides[side] = {"n_seeds": len(cells),
+                       "zero_pair_fraction": _mean_sigma(
+                           [c["zero_pair_fraction"] for c in cells]),
+                       "grid": grid}
+    for target in targets:
+        key = str(target)
+        misses = {side: sides[side]["grid"][key]["achieved_k_per_seed"]
+                  for side in sides
+                  if not sides[side]["grid"][key]["within_tolerance_all_seeds"]}
+        rungs[key] = {
+            "target_k": target,
+            "tolerance": _k_tolerance(target),
+            # two scopes, reported separately rather than one loosened rule.
+            # `admissible` is the packet's rule: every side reaches the target.
+            # `admissible_learned_sides` is the scope the pre-registered
+            # prediction is stated in -- it names the Euclidean and Lorentz
+            # sides only, and the js-cooccurrence row is constant by
+            # construction, a reference and not a party to the comparison. A
+            # rung admissible on the learned sides yields a valid two-side
+            # verdict even when the js row cannot be matched; whether it can is
+            # itself a measured result, recorded in `sides_out_of_tolerance`.
+            "admissible": not misses,
+            "admissible_learned_sides": not [s for s in misses if s in GEOMETRIES],
+            "sides_out_of_tolerance": misses,
+        }
+    return {"sides": sides, "rungs": rungs}
+
+
+def phase4_spread_ranking(dim, dataset, out_dir, seeds):
+    """The third Phase-4 ranking the Phase-5b packet names: which geometry's
+    embedded pair-distance spread sits closer to the graph's own.
+
+    Re-derived from the checkpoints, like `phase4_reference`. Note the design
+    limit stated in that packet: across d={2,5,10} this ranking is identical to
+    the MAP ranking, so a match with it is not independent evidence.
+    """
+    distances, graph = {}, None
+    for geometry in GEOMETRIES:
+        gaps = []
+        for seed in seeds:
+            path = os.path.join(
+                out_dir, f"ablation_run_{geometry}_{dataset}_d{dim}_seed{seed}.json")
+            with open(path, encoding="utf-8") as fh:
+                record = json.load(fh)
+            graph = record["graph_spread_sigma_over_mean"]
+            gaps.append(abs(record["emb_spread_sigma_over_mean"] - graph))
+        distances[geometry] = _mean_sigma(gaps)
+    return {
+        "graph_spread_sigma_over_mean": graph,
+        "abs_gap_from_graph": distances,
+        "ranking": sorted(GEOMETRIES, key=lambda g: distances[g]["mean"]),
+    }
+
+
+def _matched_k_verdict(aggregate, target, ref):
+    """Which Phase-4 ranking the matched-K gold-hops order tracks, at one rung."""
+    key = str(target)
+    order = sorted(
+        (side for side in aggregate["sides"] if side in GEOMETRIES),
+        key=lambda s: aggregate["sides"][s]["grid"][key][
+            "gold_hops_token_weighted"]["mean"])
+    full = sorted(
+        aggregate["sides"],
+        key=lambda s: aggregate["sides"][s]["grid"][key][
+            "gold_hops_token_weighted"]["mean"])
+    matches = {
+        "matches_map_ranking": order == ref["map_ranking"],
+        "matches_distortion_ranking": order == ref["distortion_ranking"],
+        "matches_spread_ranking": order == ref["spread_ranking"]["ranking"],
+    }
+    if all(matches.values()):
+        verdict = "all"
+    elif not any(matches.values()):
+        verdict = "none"
+    else:
+        verdict = "+".join(name.split("_")[1] for name, hit in matches.items() if hit)
+    return {"euclidean_vs_lorentz_gold_order": order,
+            "gold_order_all_sides": full, "verdict": verdict, **matches}
+
+
+def write_matched_k_outputs(payload, args, dims, targets, tag):
+    stem = (f"compress_matchedk_{args.dataset}"
+            f"_dims{'-'.join(str(d) for d in dims)}"
+            f"_k{'-'.join(str(k) for k in targets)}_{tag}")
+    json_path = os.path.join(args.out, stem + ".json")
+    md_path = os.path.join(args.out, stem + ".md")
+    _write_json(json_path, payload)
+    with open(md_path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(_matched_k_markdown(payload, args, dims, targets))
+    return {"json": json_path, "md": md_path}
+
+
+def _matched_k_markdown(payload, args, dims, targets):
+    lines = [f"# Phase 5e — matched-K comparison ({payload['dataset']})", "",
+             f"Seeds: {payload['seeds']} (`{payload['seed_tag']}`), mean ± σ over "
+             f"the seed set. K ladder: {targets}.", "",
+             f"Tolerance: `{payload['tolerance_rule']}`. Thresholds are not "
+             f"clamped into the prototype's `[1e-6, 10]` window on this path; "
+             f"cells flagged **outside JS clamp** are unreachable by its own "
+             f"auto-threshold.", ""]
+    for dim in dims:
+        entry = payload["per_dimension"][str(dim)]
+        lines += [f"## d={dim}", "",
+                  "| target K | side | achieved K | gold hops | ratio | "
+                  "residual bits/token | largest cluster | outside JS clamp |",
+                  "|---|---|---|---|---|---|---|---|"]
+        for target in targets:
+            key = str(target)
+            for side in SIDES:
+                side_entry = entry["sides"].get(side)
+                if side_entry is None:
+                    continue
+                cell = side_entry["grid"][key]
+                lines.append(
+                    f"| {target} | {side} | {_pm(cell['achieved_k'], 1)} | "
+                    f"{_pm(cell['gold_hops_token_weighted'], 3)} | "
+                    f"{_pm(cell['ratio'], 4)} | "
+                    f"{_pm(cell['residual_bits_per_token'], 3)} | "
+                    f"{_pm(cell['largest_cluster_token_share'], 4)} | "
+                    f"{'yes' if cell['outside_clamp_window_any_seed'] else 'no'} |")
+        lines.append("")
+        dropped = [k for k, r in entry["rungs"].items()
+                   if not r["admissible_learned_sides"]]
+        unmatchable = {k: r["sides_out_of_tolerance"] for k, r in entry["rungs"].items()
+                       if r["admissible_learned_sides"] and not r["admissible"]}
+        if dropped:
+            lines.append(f"**Rungs dropped at d={dim}** (a learned side missed its "
+                         f"target K beyond tolerance, so the rung cannot be "
+                         f"compared): {', '.join('K=' + k for k in dropped)}.")
+            for k in dropped:
+                for side, achieved in entry["rungs"][k]["sides_out_of_tolerance"].items():
+                    lines.append(f"- K={k}: `{side}` reached {achieved}")
+            lines.append("")
+        if unmatchable:
+            lines.append(f"**Rungs where the learned sides matched but another side "
+                         f"could not be matched at all** — the two-side verdict "
+                         f"stands, the three-side one does not:")
+            for k, sides_out in unmatchable.items():
+                for side, achieved in sides_out.items():
+                    lines.append(f"- K={k}: `{side}` reached {achieved} "
+                                 f"(per seed) instead of {k}")
+            lines.append("")
+        ref = entry["phase4_reference"]
+        lines += [f"Phase-4 reference at d={dim}: MAP ranking "
+                  f"{' > '.join(ref['map_ranking'])}; distortion ranking "
+                  f"{' > '.join(ref['distortion_ranking'])}; spread ranking "
+                  f"{' > '.join(ref['spread_ranking']['ranking'])} "
+                  f"(graph σ/mean {ref['spread_ranking']['graph_spread_sigma_over_mean']:.4f}).",
+                  ""]
+        if entry["ranking_match"]:
+            lines += ["| admissible rung | gold-hops order (learned sides) | "
+                      "matches MAP | matches distortion | matches spread |",
+                      "|---|---|---|---|---|"]
+            for k, verdict in entry["ranking_match"].items():
+                lines.append(
+                    f"| K={k} | {' > '.join(verdict['euclidean_vs_lorentz_gold_order'])} | "
+                    f"{verdict['matches_map_ranking']} | "
+                    f"{verdict['matches_distortion_ranking']} | "
+                    f"{verdict['matches_spread_ranking']} |")
+        else:
+            lines.append(f"**No admissible rung at d={dim}.**")
+        lines.append("")
+    lines += ["## Regenerate", "", "```",
+              f"python compress.py --matched-k {' '.join(str(k) for k in targets)} "
+              f"--dataset {args.dataset} --dims {' '.join(str(d) for d in dims)} "
+              f"--seeds {args.seeds} --out {args.out}", "```", ""]
+    return "\n".join(lines)
+
+
+def report_matched_k(payload, args, dims, targets, paths):
+    """ASCII only: this stdout is cp1252 (CLAUDE.md)."""
+    print()
+    print(f"=== Phase 5e - matched K, {args.dataset}, dims {dims}, "
+          f"K ladder {list(targets)} ===")
+    for dim in dims:
+        entry = payload["per_dimension"][str(dim)]
+        print(f"\n-- d={dim}")
+        for target in targets:
+            key = str(target)
+            rung = entry["rungs"][key]
+            if not rung["admissible_learned_sides"]:
+                misses = "; ".join(f"{s} reached {v}" for s, v
+                                   in rung["sides_out_of_tolerance"].items())
+                print(f"  K*={target}: DROPPED (out of tolerance "
+                      f"{rung['tolerance']:.1f}) -- {misses}")
+                continue
+            if not rung["admissible"]:
+                out = "; ".join(f"{s} reached {v}" for s, v
+                                in rung["sides_out_of_tolerance"].items())
+                print(f"  K*={target}: learned sides matched; NOT matchable on "
+                      f"-- {out}")
+            parts = []
+            for side in SIDES:
+                side_entry = entry["sides"].get(side)
+                if side_entry is None:
+                    continue
+                cell = side_entry["grid"][key]
+                parts.append(f"{side} {cell['gold_hops_token_weighted']['mean']:.3f}"
+                             f"+/-{cell['gold_hops_token_weighted']['sigma']:.3f}"
+                             f" @K={cell['achieved_k']['mean']:.1f}")
+            print(f"  K*={target}: " + "  |  ".join(parts))
+            verdict = entry["ranking_match"][key]
+            print(f"    learned-side order: "
+                  f"{' > '.join(verdict['euclidean_vs_lorentz_gold_order'])}"
+                  f"   MAP: {verdict['matches_map_ranking']}"
+                  f"   distortion: {verdict['matches_distortion_ranking']}"
+                  f"   spread: {verdict['matches_spread_ranking']}"
+                  f"   verdict: {verdict['verdict']}")
+    print()
+    for name, path in paths.items():
+        print(f"  {name}: {path}")
+    print()
+    print("regenerate:")
+    print(f"  python compress.py --matched-k "
+          f"{' '.join(str(k) for k in targets)} --dataset {args.dataset} "
+          f"--dims {' '.join(str(d) for d in dims)} --seeds {args.seeds} "
           f"--out {args.out}")
 
 
@@ -1656,6 +2125,12 @@ def _parse_args(argv):
                         "Additive -- reuses every function --dim uses "
                         "unmodified; see the PHASE 5b docstring section for "
                         "what it does and does not recompute.")
+    p.add_argument("--matched-k", type=int, nargs="+", default=None,
+                   metavar="K",
+                   help="Phase 5e (addendum): read the same pipeline at matched "
+                        "cluster count instead of matched percentile, at every "
+                        "--dims dimension. Additive; see the PHASE 5e docstring "
+                        f"section. A sensible ladder is {' '.join(str(k) for k in K_LADDER)}.")
     p.add_argument("--seeds", type=int, default=5,
                    help="how many seeds: base, base+1, ..., base+seeds-1")
     p.add_argument("--seed", type=int, default=DEFAULT_SEED,

@@ -12,13 +12,11 @@ mid-run.
 | [phase5b-dimensional-sweep.md](phase5b-dimensional-sweep.md) | 5b (addendum) | done 2026-08-05 — see the Phase-5b record in `../README-fase2.md` |
 | [phase5c-lossy-decoder.md](phase5c-lossy-decoder.md) | 5c (addendum) | done 2026-08-10 — all 180 cells verified, no discrepancy |
 | [phase5d-reframe-and-findings.md](phase5d-reframe-and-findings.md) | 5d (addendum) | done 2026-08-11 — reframe applied, `../FINDINGS.md` written, figure in `../report/` |
+| [phase5e-matched-k.md](phase5e-matched-k.md) | 5e (addendum) | done 2026-08-11 — the matched-K clause Phase 5b owed; see the Phase-5e record in `../README-fase2.md` |
 | [phase6-article-section4.md](phase6-article-section4.md) | 6 | superseded — carta 02 published 2026-08-05; Job 1 (keep the dossier true) executed 2026-08-11 for 4b and 5-5d; Job 2 (fact-check the text) still open; see the closure plan below |
 
-Run order for the remaining work: **the closure below**. Phases 5b, 5c and 5d are
-done; the one DoD clause never delivered is Phase 5b's matched-K comparison, which
-is a decision for the PM — either a 5e packet (minutes of compute, the coordinate
-checkpoints are cached) or an entry in `NOT-DONE.md`. See the Phase-5b record in
-`../README-fase2.md`, which states the gap.
+Run order for the remaining work: **the closure below**. Phases 5b through 5e are
+done, and with 5e there is no undelivered DoD clause left in the programme.
 
 ## Closure plan (why this project ends)
 

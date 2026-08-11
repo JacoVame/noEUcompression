@@ -105,6 +105,15 @@ At d=2 (`out/compress_wordnet-mammals_d2_seedset20260716x5.json`,
   transcribed, by `python compress.py --figure rate-distortion --out report/`,
   which prints it.
 
+**A corollary, measured in Phase 5e.** Hold the cluster count fixed instead of the
+percentile and the ratio becomes *identical* on both learned sides by construction —
+same K, same N, same V, so the same code length — while the gold hops still differ
+by up to 1.65 (d=10, K=40: 4.856 ± 1.189 against 6.506 ± 0.152). At fixed K the
+ratio carries **no** information about semantic damage: not a weak signal, none.
+The anti-correlation above is what that looks like when K is allowed to vary, which
+is the only way the ratio moves at all
+(`out/compress_matchedk_wordnet-mammals_dims2-5-10_k80-60-40-20_seedset20260716x5.json`).
+
 ## (b) The iso-cost diagonal — stated as internal accounting
 
 Under the code this repository declares (fixed width, no entropy coder,
@@ -235,7 +244,14 @@ the frozen hierarchy (7.6540 over the 166 clustered synsets).
   percentile decides the clustering, and at d=5/d=10 the Euclidean side merges
   almost nothing (K = 165.6 / 166.0 of 166 nodes, ratio 0.9388 = the
   no-clustering floor). Those cells say nothing about geometry, and are marked as
-  such in the Phase-5b record.
+  such in the Phase-5b record. **Phase 5e (2026-08-11) re-read the same
+  embeddings at matched cluster count**, off the clamped percentile path, and the
+  clamp-bound cells become real clusterings: Euclidean produces 1.85–7.06
+  token-weighted gold hops at K = 80…20 instead of ~0. That measurement does not
+  touch anything above — every ratio, correlation and round-trip figure in this
+  document is percentile-indexed and unchanged — but it is where to look before
+  reading the d≥5 Euclidean cells as evidence about geometry
+  (`out/compress_matchedk_wordnet-mammals_dims2-5-10_k80-60-40-20_seedset20260716x5.json`).
 - The finding is about **this metric on this pipeline**. It generalises as a
   caution — *a quality metric that improves monotonically as information is
   discarded will be optimised by discarding information* — not as a measurement

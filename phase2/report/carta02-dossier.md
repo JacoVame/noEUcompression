@@ -471,7 +471,11 @@ d ∈ {2, 5, 10}, 5 semi. Il clamp dell'auto-soglia del prototipo
 vincola, è il clamp e non il percentile a decidere il raggruppamento, e a d=5/d=10
 il lato euclideo non fonde quasi nulla (K = 165,6 / 166,0 su 166 nodi, rapporto
 0,9388 = il pavimento del non-raggruppare). Quelle celle non dicono nulla sulla
-geometria. Il risultato riguarda **questa metrica su questa pipeline**: generalizza
+geometria — **ed è per questo che la Fase 5e (2026-08-11) le ha rimisurate a
+numero di cluster fissato**, fuori dal percorso percentile: costretto a fondere a
+K = 80…20 il lato euclideo produce 1,85-7,06 salti d'oro invece di ~0. Nessuna
+cifra di questa sezione cambia — sono tutte indicizzate per percentile — ma la
+lettura «l'euclidea fonde fedelmente a d≥5» era un artefatto e non va scritta. Il risultato riguarda **questa metrica su questa pipeline**: generalizza
 come **cautela** — *una metrica di qualità che migliora monotonamente mentre si
 butta informazione verrà ottimizzata buttando informazione* — non come misura di
 qualcosa fuori da questa griglia.
@@ -684,6 +688,8 @@ questa tabella, non è ancora sostenuta.
 | Il costo di un buon rapporto è dicibile in una frase concreta | §4c(d): al miglior rapporto del lato appreso (0,3286) il 73,2% dei token decodificati è la parola sbagliata, verificato da 180 giri di andata-e-ritorno che chiudono entro 1,066e-14 bit/token |
 | Vincere una metrica e raggruppare fedelmente possono essere cose opposte | §4c: a p=0,01 il lato euclideo forma il clade delle scimmie antropomorfe mentre quello iperbolico fonde canidi ed elefanti — e il secondo ha il rapporto frazionario migliore (0,8133 contro 0,8448) |
 | Il nome giusto non è compressione | §4c: quantizzazione semantica valutata sul piano tasso-distorsione; i nomi di file con «compress» sono etichette storiche tenute per riproducibilità |
+| A numero di cluster fissato il rapporto non dice **nulla** sulla fedeltà | Fase 5e: a K uguale il rapporto è identico sui due lati appresi per costruzione (stesso K, stessi N e V), mentre i salti d'oro differiscono fino a 1,65 (d=10, K=40: 4,856 ± 1,189 contro 6,506 ± 0,152) |
+| A d=2 la geometria iperbolica vince le tre metriche geometriche e raggruppa peggio comunque | Fase 5e, a K uguale: l'euclidea è avanti su tutti e quattro i gradini (a K=80 1,830 ± 0,106 contro 2,356 ± 0,308, bande a un σ disgiunte), mentre a d=2 l'iperbolica vince MAP, distorsione e confronto degli spread. Il confronto pubblicato in Fase 5 era a K diverso (72 contro 85) e quindi confuso; questo non lo è |
 
 ## 10. Riproducibilità
 

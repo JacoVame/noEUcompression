@@ -57,6 +57,7 @@ The freeze boundary is exactly `eval.py` + `harness/`. Builders in Phases 2–3 
 | 5b | (addendum) Dimensional sweep of the semantic-quantization pipeline (d=5, d=10) | One command produces the three-side aggregate at both dims plus the gold-hops-vs-Phase-4 ranking table — ✅ done 2026-08-05: gold hops match the Phase-4 MAP ranking at both d=5 and d=10, and the distortion ranking only at d=5, where MAP and distortion do not actually disagree; euclidean's d≥5 result is clamp-bound rather than a clean geometric signal (see the Phase-5b record below) |
 | 5c | (addendum) Lossy decoder + round-trip gate | One command compares modelled vs reconstructed cost at every grid point on every side and exits non-zero on any failure — ✅ done 2026-08-10: all 180 cells reproduce to ≤ 1.1e-14 bits/token against a stated tolerance of 1e-9, so the Phase-5 cost accounting is now **verified by an actual encode→decode round trip**, not merely declared (see the Phase-5c record below) |
 | 5d | (addendum) Reframe + the finding written down | `FINDINGS.md` exists with the anti-correlation, the iso-cost diagonal, the reference-floor framing, the round-trip exact-match rates and the 1.55% coverage stated first, and one command regenerates the rate–distortion figure — ✅ done 2026-08-11: the pipeline is renamed **semantic quantization** in the prose, and the result is recorded — the ratio is a metric that rewards degradation (see [FINDINGS.md](FINDINGS.md) and the Phase-5d record below) |
+| 5e | (addendum) The matched-K comparison Phase 5b owed | One command produces the three-side gold-hops comparison at matched cluster count, per dimension and per rung, with the achieved K beside every figure and the ranking checked against the Phase-4 MAP, distortion and spread rankings — ✅ done 2026-08-11: both learned sides reach every rung exactly, the js side cannot be K-matched at all, Phase 5b's clamp-bound d≥5 Euclidean cells are replaced by real clusterings, and the d=2 conclusion survives matched K (see the Phase-5e record below) |
 | 6 | Article upgrade (carta 02) → redefined as the public closure | The original DoD ("§4 gains a real chart") is spent: carta 02 was published 2026-08-05 from `report/carta02-dossier.md`, and the dossier was refreshed 2026-08-11 with the Phase-4b addendum and Phases 5–5d. What remains under this slot: the public cantiere note on Phase 5 using the rate–distortion figure. The root `README.md` routing half landed in `084ee0c`. Still open from the original packet: Job 2, the fact-check of the published text against the artifacts |
 | 7 | Formal sunset | Tag `v1.0` and write `NOT-DONE.md`: Route B over co-occurrence, word-sense disambiguation, a learned hyperbolic SOM, a second taxonomy — plus Phase 5b's undelivered matched-K comparison if it is retired rather than run — not started |
 
@@ -612,6 +613,13 @@ shown to govern downstream quality here, but nor is MAP shown to, cleanly —
 the honest reading is that d=10 needed the K-matched design the prediction
 called for and did not get it from this packet's spec.
 
+**Closed by Phase 5e (2026-08-11).** The K-matched design was run; see the
+Phase-5e record below. It replaces the clamp-bound Euclidean cells above with
+real clusterings at K = 80…20 and does separate the two readings: Euclidean is
+ahead at every rung at d=10, so the near-zero figure in the table above was the
+artefact and the direction survives without it. The paragraph above is left as
+written, because what it says about *this* packet's measurement remains true.
+
 ### Phase-5c result (2026-08-10) — the round trip verifies the cost accounting
 
 One new file, `decode.py`, at the phase2 root (the placement choice the packet
@@ -754,6 +762,109 @@ bits/token type entropy that measures its slack); right panel code length agains
 token-weighted gold hops with the hierarchy-blind reference line. 108 cells,
 colour = side, marker = dimension, every value read from
 `out/compress_wordnet-mammals_d*_seedset20260716x5.json`.
+
+### Phase-5e result (2026-08-11) — the comparison at matched cluster count
+
+The clause Phase 5b called load-bearing and did not deliver. `compress.py` gains
+an **additive** `--matched-k` path (+439 lines, zero deletions, new argparse flag
+and one dispatch line); `accounting`, `cluster`, `gold_hops`, `build_mapping` and
+the percentile grid are called exactly as `--dim` and `--dims` call them, and no
+existing artifact in `out/` was rewritten. `eval.py`, `harness/`, `embeddings/`,
+`ablation.py` and `decode.py` untouched. Every embedding gate passed at max delta
+0.0e+00 on load; the mapping invariant (259 mapped types / 166 nodes) was checked,
+not assumed.
+
+**What matching K required, stated because it is a cost.** `auto_threshold` clamps
+the prototype's threshold into `[1e-6, 10]`. Matching K needs thresholds outside
+that window — the Euclidean median pairwise distance alone is 158.9 at d=5 — so
+this path selects thresholds from the distance distribution directly and does not
+clamp. Every cell carries an `outside_clamp_window` flag: all Euclidean cells at
+d=5 and d=10 are outside it, and so is the Lorentz cell at d=5, K=20. Those cells
+are unreachable by the prototype's own auto-threshold, which is exactly why they
+say something about the geometry rather than about the prototype.
+
+**A structural consequence worth naming.** At matched K the `ratio` is *identical*
+on both learned sides by construction — same cluster count, same N, same V, so the
+same code length. Matched K therefore removes the ratio from the comparison and
+leaves only fidelity, which is the right plane for this question and an independent
+illustration of the Phase-5d finding: at fixed K the ratio carries no information
+about semantic damage at all.
+
+Token-weighted gold hops, mean ± σ over the five seeds, achieved K exact on both
+learned sides at every rung (15 of 15 cells each, no rung dropped for either):
+
+| d | K | euclidean | lorentz | ahead | 1σ bands |
+|---|---|---|---|---|---|
+| 2 | 80 | **1.830 ± 0.106** | 2.356 ± 0.308 | euclidean | disjoint |
+| 2 | 60 | **2.526 ± 0.348** | 3.516 ± 0.746 | euclidean | overlap |
+| 2 | 40 | **3.362 ± 1.125** | 5.000 ± 0.592 | euclidean | overlap |
+| 2 | 20 | **5.029 ± 1.180** | 6.458 ± 0.274 | euclidean | overlap |
+| 5 | 80 | 3.768 ± 0.599 | **2.224 ± 0.387** | lorentz | disjoint |
+| 5 | 60 | 4.656 ± 0.502 | **3.523 ± 0.944** | lorentz | overlap |
+| 5 | 40 | **5.581 ± 0.771** | 5.842 ± 0.883 | euclidean | overlap |
+| 5 | 20 | **7.063 ± 0.251** | 7.134 ± 0.089 | euclidean | overlap |
+| 10 | 80 | **1.854 ± 0.099** | 2.048 ± 0.173 | euclidean | overlap |
+| 10 | 60 | **3.016 ± 1.207** | 3.822 ± 0.145 | euclidean | overlap |
+| 10 | 40 | **4.856 ± 1.189** | 6.506 ± 0.152 | euclidean | disjoint |
+| 10 | 20 | **6.241 ± 0.880** | 7.057 ± 0.109 | euclidean | overlap |
+
+**Findings, not footnotes.**
+
+- **Phase 5b's d≥5 Euclidean result was an artefact, and matched K replaces it
+  with a real measurement.** Under the percentile grid the Euclidean side was
+  clamp-bound at d=5 and d=10 with K = 165.6 / 166.0 of 166 nodes — it clustered
+  nothing, and its near-zero gold hops meant only that. Forced to cluster at
+  K = 80…20 it produces 1.85–7.06 hops, in the same range as the Lorentz side. The
+  confound Phase 5b flagged is removed, and the direction it could not defend
+  survives at d=10: Euclidean ahead at all four rungs.
+- **At d=10 the order is unanimous across the ladder; the separation is not.**
+  Euclidean produces fewer hops at every rung, but the 1σ bands are disjoint at
+  K=40 only. Four rungs on the same five seeds with nested thresholds are not four
+  independent tests, so this is one consistent direction with one clean rung, not
+  four confirmations. Reported that way rather than counted as four.
+- **At d=5 the ranking is not scale-invariant.** Lorentz is ahead at the two
+  coarsest rungs (disjoint bands at K=80) and the two sides are indistinguishable
+  at the two finest (gaps 0.262 and 0.071 against σ of 0.77–0.88 and 0.09–0.25).
+  A single ranking at d=5 would be an artefact of the rung it was read at.
+- **The d=2 conclusion survives matched K, and gets sharper.** Published at
+  unmatched K it was Lorentz 3.16 hops at K=72 against Euclidean 1.74 at K=85 —
+  confounded, since fewer clusters mean coarser merges. At matched K Euclidean is
+  ahead at all four rungs, with disjoint bands at K=80. So at d=2 the Lorentz side
+  wins MAP (0.8957 vs 0.7538), wins distortion (0.2609 vs 0.3441), wins the spread
+  comparison — **and still clusters worse**, at equal cluster count. That was the
+  most surprising thing Phase 5 reported and it was the one most exposed to the K
+  confound; it is now measured without it.
+- **The js-cooccurrence side cannot be K-matched at all**, which is a sharper
+  statement than "degenerate". Asked for K = 80, 60, 40 it returns 19, 18, 19, 7,
+  33 across the five seeds — the same value for all three targets, because 84.9% of
+  its pairwise distances are exactly zero and the reachable cluster counts skip
+  whole ranges. Its hops sit at 7.646 ± 0.018 regardless, against the
+  hierarchy-blind 7.654. Every rung is therefore **inadmissible as a three-side
+  comparison** and admissible as a two-side one; both scopes are reported per rung
+  rather than one being quietly substituted for the other.
+- **Which Phase-4 ranking the matched-K order tracks.** At d=10, MAP and spread at
+  all four rungs, distortion at none. At d=5, all three at K=40 and K=20 and none
+  at K=80 and K=60 — the rung-dependence again. At d=2, none at any rung: MAP,
+  distortion and spread all favour Lorentz there and the merges do not.
+- **The design limit Phase 5b named still stands.** Across d ∈ {2,5,10} the MAP
+  ranking and the spread ranking are identical, so nothing here separates those
+  two hypotheses; it separates both jointly from distortion, which differs at d=10
+  alone. A "matches MAP and spread" verdict is one piece of evidence, not two.
+
+**Regenerate** (~4 min on the 22-core host: no training, coordinates come from the
+cached `out/compress_coords_*.npz` and are re-gated on load; the js side is
+re-derived by `node -e` because matching K needs its distance matrix, which the
+stored per-run records do not carry):
+
+```
+python compress.py --matched-k 80 60 40 20 --dataset wordnet-mammals --dims 2 5 10 --seeds 5 --out out/
+```
+
+Artifacts:
+`out/compress_matchedk_wordnet-mammals_dims2-5-10_k80-60-40-20_seedset20260716x5.{json,md}`
+— per (dimension, rung, side) means ± σ with the achieved K per seed, the rung
+admissibility at both scopes, the clamp flags, and the three Phase-4 rankings
+re-derived from the checkpoints rather than transcribed.
 
 ### Driver seal (partial, signed off 2026-08-04)
 
