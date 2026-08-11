@@ -4,6 +4,21 @@
 >
 > A research prototype that maps words into the Poincaré disk (a *non-Euclidean* curved space — hence the playful "non-EU" nickname), groups them into semantic families and estimates how much redundancy was absorbed. It is not a `gzip` replacement: it is a small laboratory of hyperbolic geometry for text.
 
+## 🔬 Measured results — start here
+
+The 2026 phase-2 study measured this idea with learned embeddings, five seeds and
+a reproducible harness, and the headline result is **not** a compression figure:
+
+- **[`phase2/FINDINGS.md`](./phase2/FINDINGS.md)** — the pipeline is **semantic
+  quantization**, its honest plane is rate–distortion, and its compression ratio
+  is a metric that rewards degradation. Numbers, artefacts and scope included.
+- [`phase2/README-fase2.md`](./phase2/README-fase2.md) — the full phase log:
+  Euclidean baseline, learned hyperbolic embeddings, the matched ablation, and
+  the round-trip verification of the cost accounting.
+
+If you arrived here from the article, the two links above are the evidence; what
+follows is the 2025 JavaScript prototype the study measured.
+
 ## 🌍 Read this in your language · Leggilo nella tua lingua
 
 | | |

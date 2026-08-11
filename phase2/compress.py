@@ -218,6 +218,23 @@ in one additional pair of artifacts, `compress_dims_<dataset>_dims<d1>-<d2>_
 <tag>.{json,md}`, alongside the per-dimension `compress_<dataset>_d<dim>_<tag>`
 artifacts the `--dim` path already writes -- nothing is overwritten in place of
 what Phase 5 produced at d=2.
+
+-------------------------------------------------------------------------------
+PHASE 5d (addendum) -- the rate-distortion figure, `--figure`, additive
+-------------------------------------------------------------------------------
+    python compress.py --figure rate-distortion --out report/
+
+A third entry point (`main_figure`) that measures nothing. It reads the
+aggregates Phase 5 and Phase 5b already wrote into `--aggregate-dir` (default
+`out/`) and draws the plane those results live on: code length against the loss
+the code buys. No training, no clustering, no accounting call, no artifact in
+`out/` touched or rewritten; the only file written is the PNG, into `--out`.
+
+The one quantity re-derived rather than read is the hierarchy-blind gold-hops
+reference -- the all-pairs mean shortest path over the 166 clustered synsets in
+the frozen hierarchy, 7.654 -- which comes from `harness.datasets` and the
+published mapping, and from no embedding. Everything else on both panels is a
+number already in the aggregates.
 """
 import argparse
 import hashlib
@@ -285,6 +302,8 @@ JS_EPS = 1e-8            # compressionTest.js:75
 def main(argv=None):
     args = _parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
+    if args.figure:
+        return main_figure(args)
     if args.dims:
         return main_multi_dim(args)
     if args.dataset != "wordnet-mammals":
@@ -1491,6 +1510,140 @@ def _jsonable(value):
     raise TypeError(f"{type(value)} is not JSON-serialisable")
 
 
+# --------------------------------------------------------------------------- #
+# Phase 5d (addendum) — the rate-distortion figure, additive and read-only
+# --------------------------------------------------------------------------- #
+
+FIGURE_DIMS = (2, 5, 10)
+SIDE_COLOURS = {"euclidean": "#1f77b4", "lorentz": "#d62728",
+                "js-cooccurrence": "#2ca02c"}
+DIM_MARKERS = {2: "o", 5: "s", 10: "^"}
+# The stated code's own reference points, both at zero loss: the fixed-width
+# cost before any clustering, and the entropy of the same type distribution.
+# The second is a floor that measures the first one's slack, not a rival codec
+# (CONSTRAINTS.md: no comparison against gzip or any entropy coder).
+ISO_COST_LINES = (8.0, 9.0, 10.0)
+
+
+def main_figure(args):
+    """`--figure rate-distortion`: two panels drawn from the existing
+    aggregates. Reads out/, writes one PNG into --out, computes no accounting."""
+    aggregates = _load_aggregates(args)
+    blind_hops, n_nodes = hierarchy_blind_hops(args)
+    path = _plot_rate_distortion(aggregates, blind_hops, args)
+    print(f"hierarchy-blind gold-hops reference over {n_nodes} clustered "
+          f"synsets (all-pairs mean, frozen hierarchy): {blind_hops:.4f}")
+    print(f"dimensions plotted: {', '.join(f'd={d}' for d in sorted(aggregates))}"
+          f"   cells: {sum(len(SIDES) * len(a['percentile_grid']) for a in aggregates.values())}")
+    print(f"wrote {path}")
+    return 0
+
+
+def _load_aggregates(args):
+    """The Phase-5 / Phase-5b aggregates, read as they are. A missing dimension
+    names the command that produces it rather than being silently skipped."""
+    tag = ablation.seed_tag(args.seed, args.seeds)
+    found = {}
+    for dim in FIGURE_DIMS:
+        path = os.path.join(args.aggregate_dir,
+                            f"compress_{args.dataset}_d{dim}_{tag}.json")
+        if not os.path.exists(path):
+            raise SystemExit(
+                f"missing aggregate {path}; regenerate it with\n"
+                f"  python compress.py --dataset {args.dataset} --dim {dim} "
+                f"--seeds {args.seeds} --out {args.aggregate_dir}/")
+        with open(path, encoding="utf-8") as fh:
+            found[dim] = json.load(fh)
+    return found
+
+
+def hierarchy_blind_hops(args):
+    """What a clustering that ignores the hierarchy scores: the all-pairs mean
+    shortest path over the clustered synsets, in the frozen hierarchy. Published
+    as 7.654 in the Phase-5 record; re-derived here rather than transcribed."""
+    path = os.path.join(args.aggregate_dir,
+                        f"compress_mapping_pg{CORPUS_ID}_{args.dataset}.json")
+    if not os.path.exists(path):
+        raise SystemExit(f"missing mapping artifact {path}")
+    with open(path, encoding="utf-8") as fh:
+        nodes = sorted(json.load(fh)["node_index"])
+    hierarchy = datasets.load(args.dataset, seed=args.seed)
+    block = np.asarray(hierarchy.graph_dist, dtype=np.float64)[np.ix_(nodes, nodes)]
+    upper = np.triu_indices(len(nodes), 1)
+    return float(block[upper].mean()), len(nodes)
+
+
+def _plot_rate_distortion(aggregates, blind_hops, args):
+    """Left: code length against the loss it buys, with the iso-cost diagonals.
+    Right: code length against the semantic damage, with the hierarchy-blind
+    reference. One point per (side, percentile, dimension) cell, mean over the
+    seed set — never a single seed (CLAUDE.md)."""
+    tag = ablation.seed_tag(args.seed, args.seeds)
+    dims = sorted(aggregates)
+    path = os.path.join(args.out, f"rate_distortion_{args.dataset}"
+                                  f"_d{'-'.join(str(d) for d in dims)}_{tag}.png")
+    fig, (left, right) = plt.subplots(1, 2, figsize=(13.5, 5.4))
+
+    for total in ISO_COST_LINES:
+        left.plot([0.0, total], [total, 0.0], color="grey", linestyle="--",
+                  linewidth=0.9, zorder=1)
+        left.annotate(f"code + loss = {total:.0f}", xy=(total - 0.35, 0.42),
+                      rotation=-38, fontsize=7.5, color="grey", ha="right")
+
+    for dim in dims:
+        aggregate = aggregates[dim]
+        grid = aggregate["percentile_grid"]
+        for side, entry in aggregate["sides"].items():
+            cells = [entry["grid"][_pkey(p)] for p in grid]
+            code = [c["bits_per_token_after"]["mean"] for c in cells]
+            loss = [c["residual_bits_per_token"]["mean"] for c in cells]
+            hops = [c["gold_hops_token_weighted"]["mean"] for c in cells]
+            style = dict(color=SIDE_COLOURS[side], marker=DIM_MARKERS[dim],
+                         markersize=5.5, linestyle="none", alpha=0.85, zorder=3,
+                         label=f"{side}, d={dim}")
+            left.plot(code, loss, **style)
+            right.plot(code, hops, **style)
+
+    mapping = aggregates[dims[0]]["mapping"]
+    before = float(_bits(mapping["n_types_mapped"]))
+    entropy = float(mapping["type_entropy_bits"])
+    left.plot([before], [0.0], marker="*", markersize=15, color="black", zorder=4,
+              linestyle="none",
+              label=f"stated code before clustering ({before:.2f}, 0)")
+    left.plot([entropy], [0.0], marker="P", markersize=10, color="dimgrey",
+              zorder=4, linestyle="none",
+              label=f"type-entropy floor ({entropy:.3f}, 0)")
+    left.set_xlabel("code length, bits/token  ⌈log2 K⌉")
+    left.set_ylabel("residual loss, bits/token  H(type | cluster)")
+    left.set_title("Every cell sits on the same iso-cost diagonal:\n"
+                   "bits leave the code and reappear in the loss\n"
+                   "(cells coincide wherever ⌈log2 K⌉ agrees)", fontsize=10)
+    left.set_xlim(left=0.0)
+    left.set_ylim(bottom=-0.25)
+    left.legend(fontsize=6.5, loc="upper right", ncol=2)
+
+    right.axhline(blind_hops, color="black", linestyle="-.", linewidth=1.1,
+                  zorder=2)
+    right.annotate(f"hierarchy-blind reference = {blind_hops:.3f} hops",
+                   xy=(0.02, blind_hops + 0.12), xycoords=("axes fraction", "data"),
+                   fontsize=7.5)
+    right.set_xlabel("code length, bits/token  ⌈log2 K⌉")
+    right.set_ylabel("semantic damage, token-weighted gold hops")
+    right.set_title("The shorter the code, the further the merges travel\n"
+                    "in the gold hierarchy")
+    right.set_xlim(left=0.0)
+    right.set_ylim(bottom=-0.3)
+
+    fig.suptitle(f"{args.dataset} — semantic quantization on the rate-distortion "
+                 f"plane; {tag}, mean over the seed set\n"
+                 f"colour = side, marker = dimension; "
+                 f"every value read from out/compress_{args.dataset}_d*_{tag}.json")
+    fig.tight_layout()
+    fig.savefig(path, dpi=140)
+    plt.close(fig)
+    return path
+
+
 def _parse_args(argv):
     p = argparse.ArgumentParser(
         description="Phase 5: the prototype's semantic-compression accounting, "
@@ -1525,6 +1678,13 @@ def _parse_args(argv):
                    help="use this text instead of fetching PG #2300 (offline reruns)")
     p.add_argument("--no-js", action="store_true",
                    help="skip the JS co-occurrence baseline (needs node on PATH)")
+    p.add_argument("--figure", choices=("rate-distortion",), default=None,
+                   help="Phase 5d (addendum): draw a figure from the aggregates "
+                        "already in --aggregate-dir and exit. Measures nothing "
+                        "and writes nothing but the PNG, into --out.")
+    p.add_argument("--aggregate-dir", default="out",
+                   help="where --figure reads the existing aggregates from "
+                        "(default out/); --out is where the figure is written")
     args = p.parse_args(argv)
     args.sweep = sorted(set(args.sweep) | {args.percentile, PERCENTILE_SPARSE})
     return args
