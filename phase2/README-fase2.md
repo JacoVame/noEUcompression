@@ -57,7 +57,7 @@ The freeze boundary is exactly `eval.py` + `harness/`. Builders in Phases 2–3 
 | 5b | (addendum) Dimensional sweep of the semantic-quantization pipeline (d=5, d=10) | One command produces the three-side aggregate at both dims plus the gold-hops-vs-Phase-4 ranking table — ✅ done 2026-08-05: gold hops match the Phase-4 MAP ranking at both d=5 and d=10, and the distortion ranking only at d=5, where MAP and distortion do not actually disagree; euclidean's d≥5 result is clamp-bound rather than a clean geometric signal (see the Phase-5b record below) |
 | 5c | (addendum) Lossy decoder + round-trip gate | One command compares modelled vs reconstructed cost at every grid point on every side and exits non-zero on any failure — ✅ done 2026-08-10: all 180 cells reproduce to ≤ 1.1e-14 bits/token against a stated tolerance of 1e-9, so the Phase-5 cost accounting is now **verified by an actual encode→decode round trip**, not merely declared (see the Phase-5c record below) |
 | 5d | (addendum) Reframe + the finding written down | `FINDINGS.md` exists with the anti-correlation, the iso-cost diagonal, the reference-floor framing, the round-trip exact-match rates and the 1.55% coverage stated first, and one command regenerates the rate–distortion figure — ✅ done 2026-08-11: the pipeline is renamed **semantic quantization** in the prose, and the result is recorded — the ratio is a metric that rewards degradation (see [FINDINGS.md](FINDINGS.md) and the Phase-5d record below) |
-| 5e | (addendum) The matched-K comparison Phase 5b owed | One command produces the three-side gold-hops comparison at matched cluster count, per dimension and per rung, with the achieved K beside every figure and the ranking checked against the Phase-4 MAP, distortion and spread rankings — ✅ done 2026-08-11: both learned sides reach every rung exactly, the js side cannot be K-matched at all, Phase 5b's clamp-bound d≥5 Euclidean cells are replaced by real clusterings, and the d=2 conclusion survives matched K (see the Phase-5e record below) |
+| 5e | (addendum) The matched-K comparison Phase 5b owed | One command produces the three-side gold-hops comparison at matched cluster count, per dimension and per rung, with the achieved K beside every figure and the ranking checked against the Phase-4 MAP, distortion and spread rankings — ✅ done 2026-08-11: both learned sides reach every rung exactly, the js side cannot be K-matched at all, Phase 5b's clamp-bound d≥5 Euclidean cells are replaced by real clusterings, the d=2 conclusion survives matched K, and **the pre-registered prediction is confirmed** at d=10 — Euclidean ahead at all four rungs, so downstream fidelity does not follow distortion (see the Phase-5e record below for the two qualifications that belong with it) |
 | 6 | Article upgrade (carta 02) → redefined as the public closure | The original DoD ("§4 gains a real chart") is spent: carta 02 was published 2026-08-05 from `report/carta02-dossier.md`, and the dossier was refreshed 2026-08-11 with the Phase-4b addendum and Phases 5–5d. What remains under this slot: the public cantiere note on Phase 5 using the rate–distortion figure. The root `README.md` routing half landed in `084ee0c`. Still open from the original packet: Job 2, the fact-check of the published text against the artifacts |
 | 7 | Formal sunset | Tag `v1.0` and write `NOT-DONE.md`: Route B over co-occurrence, word-sense disambiguation, a learned hyperbolic SOM, a second taxonomy — plus Phase 5b's undelivered matched-K comparison if it is retired rather than run — not started |
 
@@ -865,6 +865,39 @@ Artifacts:
 — per (dimension, rung, side) means ± σ with the achieved K per seed, the rung
 admissibility at both scopes, the clamp flags, and the three Phase-4 rankings
 re-derived from the checkpoints rather than transcribed.
+
+**Verdict on the pre-registered prediction** (read only now, after the numbers
+above were committed in `f785388`). The prediction, committed in `dc88cda` before
+Phase 5b ran, was: *"fidelity will NOT follow distortion. At K-matched operating
+points at d=10, the Euclidean side will produce merges spanning fewer
+token-weighted gold hops than the Lorentz side."* Its falsification condition was
+that at matched K at d=10 the Lorentz side's token-weighted gold hops came out
+lower.
+
+**The prediction is confirmed.** At d=10 the Euclidean side produces fewer gold
+hops at every rung of the ladder — 1.854 vs 2.048 (K=80), 3.016 vs 3.822 (K=60),
+4.856 vs 6.506 (K=40), 6.241 vs 7.057 (K=20) — and the falsification condition
+never fires at any rung. Two qualifications belong in the same breath, because
+they are what the design can and cannot carry:
+
+- **The strength is one clean rung, not four.** The 1σ bands are disjoint at K=40
+  only; elsewhere the direction holds but the bands overlap. The four rungs share
+  five seeds and nested thresholds, so they are not four independent tests.
+- **What is confirmed is the negative half.** Gold hops does not follow the
+  distortion ranking at d=10 — the one dimension where MAP and distortion
+  disagree — and it does follow MAP and spread. But the MAP and spread rankings
+  are identical across d ∈ {2,5,10}, exactly as the prediction's own "known limit
+  of the design" said, so which of those two is causal remains open. Distortion is
+  ruled out as the metric governing downstream fidelity at d=10; nothing here
+  elects its replacement.
+
+The reasoning the prediction gave for the direction — that clustering cuts at a
+percentile of the pairwise-distance distribution, so *shape* governs merges rather
+than faithfulness at optimal global scale — is consistent with the d=2 result too,
+where the Euclidean side is ahead at matched K despite losing all three geometric
+metrics. It is not consistent with d=5, where the ordering depends on the rung and
+no single ranking exists. The prediction scoped itself to d=10 and made no claim at
+d=5, so that is a limit of what was predicted rather than a miss.
 
 ### Driver seal (partial, signed off 2026-08-04)
 

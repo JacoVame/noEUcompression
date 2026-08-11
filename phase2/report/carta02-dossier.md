@@ -690,6 +690,7 @@ questa tabella, non è ancora sostenuta.
 | Il nome giusto non è compressione | §4c: quantizzazione semantica valutata sul piano tasso-distorsione; i nomi di file con «compress» sono etichette storiche tenute per riproducibilità |
 | A numero di cluster fissato il rapporto non dice **nulla** sulla fedeltà | Fase 5e: a K uguale il rapporto è identico sui due lati appresi per costruzione (stesso K, stessi N e V), mentre i salti d'oro differiscono fino a 1,65 (d=10, K=40: 4,856 ± 1,189 contro 6,506 ± 0,152) |
 | A d=2 la geometria iperbolica vince le tre metriche geometriche e raggruppa peggio comunque | Fase 5e, a K uguale: l'euclidea è avanti su tutti e quattro i gradini (a K=80 1,830 ± 0,106 contro 2,356 ± 0,308, bande a un σ disgiunte), mentre a d=2 l'iperbolica vince MAP, distorsione e confronto degli spread. Il confronto pubblicato in Fase 5 era a K diverso (72 contro 85) e quindi confuso; questo non lo è |
+| La qualità semantica a valle non segue la distorsione | Fase 5e a d=10, l'unica dimensione dove MAP e distorsione dissentono: l'euclidea produce meno salti d'oro a tutti e quattro i gradini (1,854 contro 2,048 a K=80; 4,856 contro 6,506 a K=40, bande disgiunte). Era una **previsione registrata prima** della misura (commit `dc88cda`) ed è confermata. Quale metrica governi al posto della distorsione resta aperto: MAP e spread ordinano identicamente a d ∈ {2,5,10} e il disegno non le separa |
 
 ## 10. Riproducibilità
 
