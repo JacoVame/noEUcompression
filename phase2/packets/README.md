@@ -15,11 +15,11 @@ mid-run.
 | [phase5e-matched-k.md](phase5e-matched-k.md) | 5e (addendum) | done 2026-08-11 — the matched-K clause Phase 5b owed; see the Phase-5e record in `../README-fase2.md` |
 | [phase6-article-section4.md](phase6-article-section4.md) | 6 (original) | superseded — carta 02 published 2026-08-05; Job 1 (keep the dossier true) executed 2026-08-11 for 4b and 5-5d; Job 2 (fact-check the text) still open; see the closure plan below |
 | [phase6-public-note.md](phase6-public-note.md) | 6 (redefined) | done 2026-08-12 — `docs/it/cantiere-fase2.md` + `docs/en/phase2-note.md` shipped, linked from both docs READMEs and the root README's Measured-results block |
-| [phase7-sunset.md](phase7-sunset.md) | 7 (final) | ready — tag `v1.0`, write `phase2/NOT-DONE.md`, and Job 2 (the carta-02 fact-check) folded in per PM decision 2026-08-12 |
+| [phase7-sunset.md](phase7-sunset.md) | 7 (final) | done 2026-08-12 — `v1.0` tagged, `phase2/NOT-DONE.md` written, Job 2 (the carta-02 fact-check) closed with no drift found |
 
-Run order for the remaining work: **Phase 7**, the last one. Phases 5b through
-6 are done, and with Phase 6 there is no undelivered DoD clause left except
-Job 2, which Phase 7 now carries.
+**Phase 7 is done, and with it the programme.** Phases 5b through 7 are all
+done, there is no undelivered DoD clause left, and per `CLAUDE.md`'s packet
+discipline there is no Phase 8.
 
 ## Closure plan (why this project ends)
 
