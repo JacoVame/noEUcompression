@@ -27,6 +27,10 @@
 9. [FAQ — domande frequenti](./faq.md)
 10. [Il racconto — leggilo come un piccolo romanzo](./racconto.md)
 
+## 🏗️ Nota di cantiere (fase 2)
+
+- [Nota di cantiere — fase 2](./cantiere-fase2.md) — cosa il progetto ha misurato, cosa ha trovato, cosa non afferma.
+
 ## 🎨 Visualizzazioni
 
 - [Pipeline animata interattiva](../diagram/pipeline.html) — gli otto stadi in movimento

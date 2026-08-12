@@ -27,6 +27,10 @@
 9. [FAQ — frequently asked questions](./faq.md)
 10. [The story — read it like a small novel](./story.md)
 
+## 🏗️ Cantiere note (phase 2)
+
+- [Cantiere note — phase 2](./phase2-note.md) — what the project set out to measure, what it found, what it does not claim.
+
 ## 🎨 Visualisations
 
 - [Interactive animated pipeline](../diagram/pipeline.html) — eight stages in motion

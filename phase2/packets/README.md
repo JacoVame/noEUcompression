@@ -14,10 +14,12 @@ mid-run.
 | [phase5d-reframe-and-findings.md](phase5d-reframe-and-findings.md) | 5d (addendum) | done 2026-08-11 — reframe applied, `../FINDINGS.md` written, figure in `../report/` |
 | [phase5e-matched-k.md](phase5e-matched-k.md) | 5e (addendum) | done 2026-08-11 — the matched-K clause Phase 5b owed; see the Phase-5e record in `../README-fase2.md` |
 | [phase6-article-section4.md](phase6-article-section4.md) | 6 (original) | superseded — carta 02 published 2026-08-05; Job 1 (keep the dossier true) executed 2026-08-11 for 4b and 5-5d; Job 2 (fact-check the text) still open; see the closure plan below |
-| [phase6-public-note.md](phase6-public-note.md) | 6 (redefined) | ready — the public cantiere note in docs/it + docs/en; PM scope exception for docs/ prose dated 2026-08-12 inside the packet |
+| [phase6-public-note.md](phase6-public-note.md) | 6 (redefined) | done 2026-08-12 — `docs/it/cantiere-fase2.md` + `docs/en/phase2-note.md` shipped, linked from both docs READMEs and the root README's Measured-results block |
+| [phase7-sunset.md](phase7-sunset.md) | 7 (final) | ready — tag `v1.0`, write `phase2/NOT-DONE.md`, and Job 2 (the carta-02 fact-check) folded in per PM decision 2026-08-12 |
 
-Run order for the remaining work: **the closure below**. Phases 5b through 5e are
-done, and with 5e there is no undelivered DoD clause left in the programme.
+Run order for the remaining work: **Phase 7**, the last one. Phases 5b through
+6 are done, and with Phase 6 there is no undelivered DoD clause left except
+Job 2, which Phase 7 now carries.
 
 ## Closure plan (why this project ends)
 
@@ -30,12 +32,14 @@ the one thing research repositories never do, which is to stop on purpose.
   `docs/en/story.md` for carta 01, `phase2/README-fase2.md` for carta 02,
   `FINDINGS.md` for Phase 5. Today a visitor arriving from the published article
   lands on the 2025 JS prototype.
-- **Phase 7** — formal sunset: tag `v1.0` and write `NOT-DONE.md` listing what
-  would be a *different project*: Route B over co-occurrence, word-sense
+- **Phase 7** — formal sunset: tag `v1.0` and write `phase2/NOT-DONE.md` listing
+  what would be a *different project*: Route B over co-occurrence, word-sense
   disambiguation, a learned hyperbolic SOM, a second taxonomy to confirm the
   shape of the boundary. Without a termination criterion a research project is
   not closed, it is abandoned — and abandonment costs a narrative that closure
-  does not.
+  does not. Job 2 (the carta-02 fact-check, open since the original Phase-6
+  packet) is folded into this phase rather than left open past the tag
+  (PM decision, 2026-08-12).
 
 ## Conventions every packet inherits, so none of them restates it
 

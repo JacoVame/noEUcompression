@@ -15,6 +15,7 @@ a reproducible harness, and the headline result is **not** a compression figure:
 - [`phase2/README-fase2.md`](./phase2/README-fase2.md) — the full phase log:
   Euclidean baseline, learned hyperbolic embeddings, the matched ablation, and
   the round-trip verification of the cost accounting.
+- The public cantiere note, plain language, same numbers: [`docs/it/cantiere-fase2.md`](./docs/it/cantiere-fase2.md) (Italiano) · [`docs/en/phase2-note.md`](./docs/en/phase2-note.md) (English).
 
 If you arrived here from the article, the two links above are the evidence; what
 follows is the 2025 JavaScript prototype the study measured.
