@@ -239,8 +239,8 @@ the frozen hierarchy (7.6540 over the 166 clustered synsets).
 ## Scope of the claim
 
 - One corpus, one hierarchy, **1.55% token coverage**, d ∈ {2, 5, 10}, 5 seeds.
-- The prototype's auto-threshold clamp (`compressionTest.js:531-535`, bounds
-  `[1e-6, 10]`) binds on several cells; where it binds, the clamp and not the
+- The prototype's auto-threshold clamp ([`compressionTest.js:531-535`](https://github.com/JacoVame/noEUcompression/blob/v1.0/compressionTest.js#L531-L535),
+  bounds `[1e-6, 10]`) binds on several cells; where it binds, the clamp and not the
   percentile decides the clustering, and at d=5/d=10 the Euclidean side merges
   almost nothing (K = 165.6 / 166.0 of 166 nodes, ratio 0.9388 = the
   no-clustering floor). Those cells say nothing about geometry, and are marked as
