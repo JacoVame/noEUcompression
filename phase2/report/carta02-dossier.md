@@ -14,7 +14,7 @@ dell'articolo: è la base di evidenza da cui l'articolo si scrive.
 Fase 4 del programma `phase2` e si rigenera con un solo comando (§10). Nessun
 numero è stimato, arrotondato a mano o ricordato.
 
-Data: 2026-08-04 · repository `noEUcompression`, branch `phase2` (PR #7) ·
+Data: 2026-08-04 · repository `noEUcompression`, commit [`c7f95bc`](https://github.com/JacoVame/noEUcompression/commit/c7f95bc35de81022778c6ceba28da9462fea581a) (PR #7, branch since deleted) ·
 seed set `20260716..20260720`. **Aggiornato il 2026-08-04 con la Fase 4b e il suo
 addendum** (§4b): la scansione del budget di epoche è stata eseguita, ha prodotto
 prima una riserva sul ribaltamento a d≥5 e poi — estesa sopra 6000 lo stesso
